@@ -6,6 +6,15 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Miami Tech Metrics</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <!-- Visit counter: same GoatCounter site as the team scorecards. Broward and Miami Dade count as separate pages;
+         the search's jump links (?tech=, ?sup=, &open=) are left out so they don't show up as extra pages. -->
+    <script>
+      window.goatcounter = { path: function () {
+        var m = new URLSearchParams(location.search).get('market');
+        return location.pathname + '?market=' + (m === 'Broward' ? 'Broward' : 'Dade');
+      } };
+    </script>
+    <script data-goatcounter="https://dillon-scorecard.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
     <style>
         /* Viewer Mode Restrictions */
         body.viewer-mode button[type="submit"],
