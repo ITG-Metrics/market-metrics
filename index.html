@@ -1578,14 +1578,25 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sc-av.ini .sc-ini { color: var(--sc-c4); } }
       .sc-who { display: inline-flex; align-items: center; gap: 10px; vertical-align: middle; }
       .mx-podbar-item .sc-av { align-self: center; }
-      .mx-champ-av { position: relative; flex: none; width: 76px; height: 76px; }
-      body:not(#_sc) .mx-champ-av .mx-champ-badge { position: absolute; right: -4px; bottom: -4px; width: 28px; height: 28px; border-width: 1.5px;
+      .mx-champ-av { position: relative; flex: none; width: 92px; height: 92px; }
+      /* Top supervisor banner, same effects as the team scorecard's top tech: glowing photo, one gold streak on load, falling confetti. */
+      body:not(#_sc) .mx-champ-av .sc-av { border: 3px solid var(--gold); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 18%, transparent), 0 0 26px color-mix(in srgb, #e8b931 45%, transparent); animation: mx-glow 3.2s ease-in-out infinite; }
+      @keyframes mx-glow { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 26%, transparent), 0 0 40px color-mix(in srgb, #e8b931 65%, transparent); } }
+      .mx-champ::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, #ffe38a 22%, transparent) 50%, transparent 65%); transform: translateX(-120%); }
+      .mx-champ.mx-sheen::before { animation: mx-sheen 1.8s .4s ease-out 1 forwards; }
+      @keyframes mx-sheen { to { transform: translateX(120%); } }
+      .mx-confetti .cf { animation: mx-fall var(--dur, 9s) linear var(--delay, 0s) infinite; }
+      .mx-confetti .cf > * { transform-box: fill-box; transform-origin: center; animation: mx-tumble var(--spin, 3s) linear infinite; }
+      @keyframes mx-fall { 0% { transform: translate(0, -14px); opacity: 0; } 8% { opacity: 1; } 50% { transform: translate(var(--sway, 8px), 80px); } 88% { opacity: 1; } 100% { transform: translate(0, 175px); opacity: 0; } }
+      @keyframes mx-tumble { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { body:not(#_sc) .mx-champ-av .sc-av, .mx-champ.mx-sheen::before, .mx-confetti .cf, .mx-confetti .cf > * { animation: none; } .mx-champ::before { display: none; } }
+      body:not(#_sc) .mx-champ-av .mx-champ-badge { position: absolute; right: -4px; bottom: -4px; z-index: 2; width: 32px; height: 32px; border-width: 1.5px;
         background: color-mix(in srgb, var(--gold) 22%, var(--color-panel)); }
-      body:not(#_sc) .mx-champ-av .mx-champ-badge svg { width: 16px; height: 16px; }
+      body:not(#_sc) .mx-champ-av .mx-champ-badge svg { width: 18px; height: 18px; }
       .mx-place-av { position: relative; flex: none; width: 44px; height: 44px; }
       body:not(#_sc) .mx-place-av .mx-medal { position: absolute; right: -5px; bottom: -5px; width: 20px; height: 20px; font-size: 11px; border-width: 1.5px;
         font-family: var(--font-anthropic-sans); font-weight: 700; background: color-mix(in srgb, var(--medal) 30%, var(--color-panel)); }
-      @media (max-width: 40rem) { .mx-champ-av { width: 56px; height: 56px; } .mx-champ-av .sc-av { --av: 56px !important; } }
+      @media (max-width: 40rem) { .mx-champ-av { width: 60px; height: 60px; } .mx-champ-av .sc-av { --av: 60px !important; } }
       /* Tech detail: selected tech and their supervisor */
       .mx-who { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; padding: 10px 14px;
         border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: color-mix(in srgb, var(--color-fg) 3%, var(--color-panel)); }
@@ -2734,7 +2745,28 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var c = list[0];
         $('mx-champ-range').textContent = range;
         $('mx-champ-name').textContent = c.sup;
-        $('mx-champ-avatar').innerHTML = AV(c.sup, 76);
+        $('mx-champ-avatar').innerHTML = AV(c.sup, 92);
+        // gold streak once, and again whenever the banner is opened from the collapsed bar
+        var champ = document.querySelector('#mx-podium .mx-champ');
+        var sheen = function () { champ.classList.remove('mx-sheen'); void champ.offsetWidth; champ.classList.add('mx-sheen'); };
+        sheen();
+        $('mx-podbar').addEventListener('click', function () { if (!$('mx-podium').classList.contains('mx-collapsed')) sheen(); });
+        // falling confetti: pieces drift down, sway and tumble on their own loops
+        (function () {
+          var svg = document.querySelector('#mx-podium .mx-confetti');
+          if (!svg || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var NS = 'http://www.w3.org/2000/svg', cols = ['#e8b931', '#4a86e8', '#e06c75', '#43b581'];
+          svg.replaceChildren();
+          for (var i = 0; i < 26; i++) {
+            var g = document.createElementNS(NS, 'g'), x = 10 + Math.random() * 285, dur = 7 + Math.random() * 6, piece;
+            g.setAttribute('class', 'cf');
+            g.style.setProperty('--dur', dur.toFixed(1) + 's'); g.style.setProperty('--delay', (-Math.random() * dur).toFixed(1) + 's');
+            g.style.setProperty('--sway', ((Math.random() - .5) * 26).toFixed(1) + 'px'); g.style.setProperty('--spin', (2 + Math.random() * 4).toFixed(1) + 's');
+            if (i % 3 === 0) { piece = document.createElementNS(NS, 'circle'); piece.setAttribute('cx', x); piece.setAttribute('cy', 0); piece.setAttribute('r', (2 + Math.random() * 1.2).toFixed(1)); }
+            else { piece = document.createElementNS(NS, 'rect'); piece.setAttribute('x', x); piece.setAttribute('y', -2); piece.setAttribute('width', 7); piece.setAttribute('height', 3.5); piece.setAttribute('rx', 1); }
+            piece.setAttribute('fill', cols[i % cols.length]); g.appendChild(piece); svg.appendChild(g);
+          }
+        })();
         $('mx-champ-name').dataset.scSup = c.sup; $('mx-champ-avatar').dataset.scSup = c.sup; $('mx-champ-name').title = 'Open supervisor scorecard';
         var firsts = ['tu', 'tnps', 'ftr'].filter(function (k) { return c['rk_' + k] === 1; }).map(function (k) { return { tu: 'tool usage', tnps: 'tNPS', ftr: 'FTR' }[k]; });
         $('mx-champ-msg').textContent = 'Congratulations to ' + c.sup + ' and team! ' +
