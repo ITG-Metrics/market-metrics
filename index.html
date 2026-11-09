@@ -1448,7 +1448,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
-      /* Supervisor table on phones: rank, supervisor and tool usage, tNPS, FTR only (techs, jobs and appts met show on wider screens) */
+      /* Supervisor table on phones: rank, supervisor and tool usage, tNPS, FTR only (techs, jobs and the fail counts show on wider screens) */
       @media (max-width: 44rem) {
         #mx-sup-table .lg-only { display: none; }
         body:not(#_sc) #mx-sup-table { font-size: 14px; }
@@ -2303,6 +2303,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           surveys: r.surveys,
           ftr: ftrBase(r) ? 100 * (1 - r.ftr_fail / ftrBase(r)) : null,
           ftr_fail: r.ftr_fail, ftr_base: ftrBase(r), det: r.det, prom: r.prom,
+          tu_fail: r.tu_elig != null && r.tu_res != null ? Math.max(0, r.tu_elig - r.tu_res) : null,
           met: r.appts ? 100 * r.met_appts / r.appts : null,
           pht: r.pht, rework: r.rework, repeat: r.repeat
         };
@@ -2405,16 +2406,16 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var R = supRank(state.i), m = R.m, agg = R.agg, ranked = R.ranked;
         // whoever is 1st for the fiscal month on screen gets a glowing row
         var lead = (ranked[0] || {}).sup;
-        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="lg-only"><span>Appts met</span></th></tr></thead>';
+        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th class="lg-only" title="Jobs where tool usage was missed"><span>TU fails</span></th><th><span>tNPS</span></th><th class="lg-only" title="Detractor surveys"><span>tNPS fails</span></th><th><span>FTR</span></th><th class="lg-only" title="FTR fails"><span>FTR fails</span></th></tr></thead>';
         var order = ranked.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
         var body = order.map(function (s, idx) {
           var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st for ' + m.label + ' · ' : '';
-          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="3" class="l">No jobs this month</td><td class="lg-only"></td></tr>';
+          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="6" class="l">No jobs this month</td></tr>';
           var r = rates(a);
-          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="lg-only">' + pct(r.met) + '</td></tr>';
+          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="lg-only">' + num(r.tu_fail) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="lg-only">' + num(r.det) + '</td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="lg-only">' + num(r.ftr_fail) + '</td></tr>';
         }).join('');
         var t = rates(teamRow(m));
-        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="lg-only">' + pct(t.met) + '</td></tr>';
+        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="lg-only">' + num(t.tu_fail) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="lg-only">' + num(t.det) + '</td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="lg-only">' + num(t.ftr_fail) + '</td></tr>';
         $('mx-sup-table').innerHTML = head + '<tbody>' + body + '</tbody>';
       }
 
