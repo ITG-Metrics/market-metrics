@@ -3322,7 +3322,23 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           if (tid && !t) return;
           if (sup && SUPS.indexOf(sup) < 0) return;
           items = [t ? { type: 'tech', t: t, mk: MK } : { type: 'sup', s: sup, mk: MK }];
-          setTimeout(function () { go(0, how === 'detail' ? 'detail' : 'card'); }, 50);
+          if (!(t && how === 'detail')) { setTimeout(function () { go(0, 'card'); }, 50); return; }
+          // Details: the page is still loading (avatars, fonts, charts), which keeps pushing Tech detail down.
+          // Pick the tech now, then hold Tech detail in place until the page settles or the person scrolls.
+          try { history.scrollRestoration = 'manual'; } catch (e) {}
+          pickTech(t.id);
+          var d = $('mx-detail'); if (!d) return;
+          if (window.__mmFoldPodium) window.__mmFoldPodium();
+          var held = true, until = Date.now() + 5000, ro = null;
+          function want() { return parseFloat(getComputedStyle(d).scrollMarginTop) || 90; }
+          function pin() { if (!held) return; if (Date.now() > until) { stop(); return; } if (Math.abs(d.getBoundingClientRect().top - want()) > 4) d.scrollIntoView({ block: 'start' }); }
+          function stop() { held = false; if (ro) ro.disconnect(); ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (ev) { window.removeEventListener(ev, stop, true); }); }
+          ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(function (ev) { window.addEventListener(ev, stop, true); });
+          if (window.ResizeObserver) { ro = new ResizeObserver(function () { requestAnimationFrame(pin); }); ro.observe(document.body); ro.observe(d); }
+          requestAnimationFrame(function () { pin(); d.classList.remove('mm-flash'); void d.offsetWidth; d.classList.add('mm-flash'); });
+          window.addEventListener('load', function () { requestAnimationFrame(pin); });
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { requestAnimationFrame(pin); });
+          [300, 800, 1500, 2500, 4000].forEach(function (ms) { setTimeout(pin, ms); });
         })();
       })();
 
