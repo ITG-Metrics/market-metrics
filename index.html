@@ -1733,6 +1733,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mm-search input::-webkit-search-cancel-button { display: none; }
       .mm-search kbd { position: absolute; right: 10px; font: 11px/1 ui-monospace, monospace; color: var(--color-fg-muted); border: 1px solid var(--color-border-line); border-radius: 4px; padding: 2px 5px; pointer-events: none; }
       .mm-search:focus-within kbd { display: none; }
+      .mm-r-mk { margin-left: auto; flex: none; align-self: center; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; padding: 2px 7px; border-radius: 999px; color: var(--sc-c1); background: color-mix(in srgb, var(--sc-c1) 12%, transparent); white-space: nowrap; }
+      .mm-c-away { margin: 0 0 10px; font-size: 12px; color: var(--color-fg-muted); padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--sc-c1) 8%, transparent); }
       .mm-results { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60; background: var(--cds-surface-popover, var(--color-panel)); border: 1px solid var(--color-border-line);
         border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.18); padding: 6px; max-height: min(70vh, 30rem); overflow: auto; }
       .mm-results[hidden] { display: none; }
@@ -2186,6 +2188,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       // Metrics come from the shared data file (data/market.json in this repo), the same pull the scorecard refresh uses.
       // ?market=Broward would show another market from the same file once it is in there.
       var MARKET = new URLSearchParams(location.search).get('market') || 'Dade';
+      var XM = null; // every market's roster, so the header search can find techs in the other market
       fetch('data/market.json', { cache: 'no-cache' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function (D) {
@@ -2201,6 +2204,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
             nav.innerHTML = keys.map(function (k) { return '<a href="?market=' + encodeURIComponent(k) + '"' + (k === MARKET ? ' aria-current="page"' : '') + '>' + (NAMES[k] ? NAMES[k][1] : k) + '</a>'; }).join('');
             nav.hidden = false;
           }
+          XM = {}; keys.forEach(function (k) { XM[k] = { name: NAMES[k] ? NAMES[k][1] : k, roster: D.markets[k].roster || [] }; });
           start({ team: M.team, pulled: D.pulled, months: M.months }, M.roster);
         })
         .catch(function (e) {
@@ -3115,29 +3119,41 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         setPh(); var ls = $('lang-select'); if (ls) ls.addEventListener('change', setPh);
         var MK = (typeof MARKET !== 'undefined' && MARKET) || 'Dade';
 
-        // ---- tech info (public part + encrypted part) ----
-        var INFO = null, SEC = null, infoP = null, KEYNAME = 'mm-k-' + MK;
+        // every market's roster (techs + supervisors), so a search finds techs from the other market too
+        var MKS = XM || {}; if (!MKS[MK]) MKS[MK] = { name: MK, roster: ROSTER };
+        function mkName(m) { return (MKS[m] && MKS[m].name) || m; }
+        function supsOf(m) { var a = []; (MKS[m].roster || []).forEach(function (t) { if (t.sup && a.indexOf(t.sup) < 0) a.push(t.sup); }); return a; }
+
+        // ---- tech info (public part + encrypted part), per market ----
+        var INFO = null, SEC = {}, infoP = null;
+        function keyName(m) { return 'mm-k-' + m; }
         function loadInfo() {
           if (!infoP) infoP = fetch('data/techinfo.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) { INFO = d && d.markets && d.markets[MK] ? d : null; if (INFO) tryStored(); paint(); }).catch(function () {});
+            .then(function (d) { INFO = d && d.markets ? d : null; if (INFO) tryStored(); paint(); }).catch(function () {});
           return infoP;
         }
         function ub64(x) { var b = atob(x), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
         function b64(u) { var s = ''; u = new Uint8Array(u); for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
-        function decryptWith(rawKey) {
-          var L = INFO.markets[MK].locked;
+        function decryptWith(rawKey, m) {
+          var L = INFO.markets[m].locked;
           return crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['decrypt'])
             .then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(L.iv) }, k, ub64(L.ct)); })
-            .then(function (pt) { SEC = JSON.parse(new TextDecoder().decode(pt)); });
+            .then(function (pt) { SEC[m] = JSON.parse(new TextDecoder().decode(pt)); });
         }
-        function unlock(pw) {
-          var L = INFO.markets[MK].locked, enc = new TextEncoder();
+        function unlock(pw, m) {
+          var L = INFO.markets[m].locked, enc = new TextEncoder();
           return crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits'])
             .then(function (base) { return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: ub64(L.salt), iterations: INFO.kdf.iter }, base, 256); })
-            .then(function (bits) { return decryptWith(bits).then(function () { try { sessionStorage.setItem(KEYNAME, b64(bits)); } catch (e) {} }); });
+            .then(function (bits) { return decryptWith(bits, m).then(function () { try { sessionStorage.setItem(keyName(m), b64(bits)); } catch (e) {} }); });
         }
-        function tryStored() { var k = null; try { k = sessionStorage.getItem(KEYNAME); } catch (e) {} if (k) decryptWith(ub64(k)).then(paint, function () { try { sessionStorage.removeItem(KEYNAME); } catch (e) {} }); }
-        function lockNow() { SEC = null; try { sessionStorage.removeItem(KEYNAME); } catch (e) {} paint(); }
+        function tryStored() {
+          Object.keys(INFO.markets).forEach(function (m) {
+            if (!INFO.markets[m].locked) return;
+            var k = null; try { k = sessionStorage.getItem(keyName(m)); } catch (e) {}
+            if (k) decryptWith(ub64(k), m).then(paint, function () { try { sessionStorage.removeItem(keyName(m)); } catch (e) {} });
+          });
+        }
+        function lockNow(m) { delete SEC[m]; try { sessionStorage.removeItem(keyName(m)); } catch (e) {} paint(); }
 
         function fold(x) { return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
         function hl(name, toks) {
@@ -3148,18 +3164,23 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           return out + (on ? '</mark>' : '');
         }
         var items = [], act = -1, cardErr = '';
+        function mkTag(r) { return r.mk && r.mk !== MK ? '<span class="mm-r-mk" data-no-tr>' + esc(mkName(r.mk)) + '</span>' : ''; }
         function search(v) {
           var toks = fold(v).split(/[\s,]+/).filter(Boolean); if (!toks.length) return [];
           var res = [];
-          ROSTER.forEach(function (t) {
+          var order = [MK].concat(Object.keys(MKS).filter(function (m) { return m !== MK; }));
+          order.forEach(function (mk) {
+          var bump = mk === MK ? 5 : 0; // the market you're on ranks first on a tie
+          (MKS[mk].roster || []).forEach(function (t) {
             var id = fold(t.id), nm = fold(t.name), sc = 0;
             if (toks.length === 1 && id === toks[0]) sc = 100;
             else if (toks.length === 1 && id.indexOf(toks[0]) === 0) sc = 80;
             else if (toks.every(function (k) { return nm.indexOf(k) >= 0 || id.indexOf(k) === 0; })) sc = nm.split(/\s+/).some(function (w) { return w.indexOf(toks[0]) === 0; }) ? 60 : 40;
-            if (sc) res.push({ type: 'tech', t: t, sc: sc, toks: toks });
+            if (sc) res.push({ type: 'tech', t: t, mk: mk, sc: sc + bump, toks: toks });
           });
-          SUPS.forEach(function (s) { var nm = fold(s); if (toks.every(function (k) { return nm.indexOf(k) >= 0; })) res.push({ type: 'sup', s: s, sc: 50, toks: toks }); });
-          res.sort(function (a, b) { return b.sc - a.sc || (a.t ? a.t.name : a.s).localeCompare(b.t ? b.t.name : b.s); });
+          supsOf(mk).forEach(function (s) { var nm = fold(s); if (toks.every(function (k) { return nm.indexOf(k) >= 0; })) res.push({ type: 'sup', s: s, mk: mk, sc: 50 + bump, toks: toks }); });
+          });
+          res.sort(function (a, b) { if ((a.type === 'sup') !== (b.type === 'sup')) return a.type === 'sup' ? 1 : -1; return b.sc - a.sc || (a.t ? a.t.name : a.s).localeCompare(b.t ? b.t.name : b.s); });
           return res.slice(0, 10);
         }
         function render() {
@@ -3172,8 +3193,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
             var h = '<div class="mm-res-list">', last = '';
             items.forEach(function (r, i) {
               if (r.type !== last) { h += '<div class="mm-r-head">' + (r.type === 'tech' ? 'Techs' : 'Supervisors') + '</div>'; last = r.type; }
-              if (r.type === 'tech') h += '<div class="mm-r" role="option" data-i="' + i + '"><span class="mm-r-id" data-no-tr>' + esc(r.t.id) + '</span><span class="mm-r-main"><div class="mm-r-nm" data-no-tr>' + hl(r.t.name, r.toks) + '</div><div class="mm-r-sub" data-no-tr>' + esc(r.t.sup || '') + '</div></span></div>';
-              else h += '<div class="mm-r" role="option" data-i="' + i + '">' + AV(r.s, 26) + '<span class="mm-r-main"><div class="mm-r-nm" data-no-tr>' + hl(r.s, r.toks) + '</div></span></div>';
+              if (r.type === 'tech') h += '<div class="mm-r" role="option" data-i="' + i + '"><span class="mm-r-id" data-no-tr>' + esc(r.t.id) + '</span><span class="mm-r-main"><div class="mm-r-nm" data-no-tr>' + hl(r.t.name, r.toks) + '</div><div class="mm-r-sub" data-no-tr>' + esc(r.t.sup || '') + '</div></span>' + mkTag(r) + '</div>';
+              else h += '<div class="mm-r" role="option" data-i="' + i + '">' + AV(r.s, 26) + '<span class="mm-r-main"><div class="mm-r-nm" data-no-tr>' + hl(r.s, r.toks) + '</div></span>' + mkTag(r) + '</div>';
             });
             box.innerHTML = h + '</div><div class="mm-card" id="mm-card"></div>'; box.classList.add('wide');
           }
@@ -3183,30 +3204,33 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var LOCKICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
         function fdate(d) { if (!d) return 'N/A'; var m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[2] + '/' + m[3] + '/' + m[1] : String(d); }
         function sv(id, k, fmt) { // locked value
-          if (!SEC) return '<span class="mm-lk" title="Locked">' + LOCKICO + '<i>••••••</i></span>';
-          var x = (SEC[id] || {})[k]; x = fmt ? fmt(x) : x;
+          var S = SEC[CUR]; if (!S) return '<span class="mm-lk" title="Locked">' + LOCKICO + '<i>••••••</i></span>';
+          var x = (S[id] || {})[k]; x = fmt ? fmt(x) : x;
           if (!x) return '<span class="mm-na">N/A</span>';
           if (k === 'email') return '<a href="mailto:' + esc(x) + '">' + esc(x) + '</a>';
           if (k === 'phone') return '<a href="tel:' + esc(String(x).replace(/[^\d+]/g, '')) + '">' + esc(x) + '</a>';
           return esc(x);
         }
         function pv(x) { return x == null || x === '' ? '<span class="mm-na">N/A</span>' : esc(x); }
+        var CUR = MK;
         function paint() {
           var el = document.getElementById('mm-card'); if (!el) return; var r = items[act]; if (!r) { el.innerHTML = ''; return; }
+          CUR = r.mk || MK; var away = CUR !== MK, MI = INFO && INFO.markets[CUR];
+          var awayNote = away ? '<p class="mm-c-away"><span>In <b data-no-tr>' + esc(mkName(CUR)) + '</b> · opens that market\u2019s page</span></p>' : '';
           if (r.type === 'sup') {
-            var n = ROSTER.filter(function (t) { return t.sup === r.s; }).length;
-            el.innerHTML = '<div class="mm-c-top">' + AV(r.s, 64) + '<div class="mm-c-who"><div class="mm-c-name" data-no-tr>' + esc(r.s) + '</div><span class="mm-pill">Supervisor</span></div></div>' +
+            var n = (MKS[CUR].roster || []).filter(function (t) { return t.sup === r.s; }).length;
+            el.innerHTML = awayNote + '<div class="mm-c-top">' + AV(r.s, 64) + '<div class="mm-c-who"><div class="mm-c-name" data-no-tr>' + esc(r.s) + '</div><span class="mm-pill">Supervisor</span></div></div>' +
               '<p class="mm-c-note"><b data-no-tr>' + n + '</b> <span>' + (n === 1 ? 'tech' : 'techs') + '</span></p>' +
               '<div class="mm-c-foot"><span></span><span class="mm-c-btns"><button type="button" class="pri" data-go="card" data-i="' + act + '">Scorecard</button></span></div>';
             return;
           }
-          var t = r.t, P = INFO ? (INFO.markets[MK].public[t.id] || null) : null;
+          var t = r.t, P = MI ? (MI.public[t.id] || null) : null;
           var ini = (t.name || '').split(/\s+/).filter(Boolean); ini = ((ini[0] || '')[0] || '') + ((ini.length > 1 ? ini[ini.length - 1] : '')[0] || '');
           var st = P && P.status ? String(P.status) : 'working', term = /term/i.test(st);
           var off = (P && P.off) || [];
-          var h = '<div class="mm-c-top"><span class="mm-c-av" aria-hidden="true">' + esc(ini.toUpperCase()) + '</span><div class="mm-c-who"><div class="mm-c-name" data-no-tr>' + esc(t.name) + '</div><span class="mm-pill" data-no-tr>Tech #' + esc(t.id) + '</span></div>' +
+          var h = awayNote + '<div class="mm-c-top"><span class="mm-c-av" aria-hidden="true">' + esc(ini.toUpperCase()) + '</span><div class="mm-c-who"><div class="mm-c-name" data-no-tr>' + esc(t.name) + '</div><span class="mm-pill" data-no-tr>Tech #' + esc(t.id) + '</span></div>' +
             '<span class="mm-status' + (term ? ' bad' : '') + '">' + (term ? 'Terminated' : 'Working') + '</span></div>';
-          if (!INFO) {
+          if (!MI) {
             h += '<p class="mm-c-note">Tech info isn’t available yet.</p>';
           } else if (!P) {
             h += '<p class="mm-c-note">This tech isn’t in the latest Shift Calendar pull.</p>';
@@ -3225,8 +3249,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
               '<div><b data-no-tr>' + (+P.u33 || 0) + '</b><span>U33 forms</span></div><div><b data-no-tr>' + (+P.u44 || 0) + '</b><span>U44 forms</span></div></div></div></div>';
           }
           h += '<div class="mm-c-foot">';
-          if (INFO && P) {
-            h += SEC ? '<span class="mm-unl">' + LOCKICO.replace('M8 11V7a4 4 0 0 1 8 0v4', 'M8 11V7a4 4 0 0 1 7.5-2') + '<span>Unlocked</span> <button type="button" class="lnk" data-lock>Lock</button></span>'
+          if (MI && P && MI.locked) {
+            h += SEC[CUR] ? '<span class="mm-unl">' + LOCKICO.replace('M8 11V7a4 4 0 0 1 8 0v4', 'M8 11V7a4 4 0 0 1 7.5-2') + '<span>Unlocked</span> <button type="button" class="lnk" data-lock>Lock</button></span>'
               : '<form class="mm-unlock" data-unlock>' + LOCKICO + '<input type="password" autocomplete="off" placeholder="Passcode" aria-label="Passcode to show locked info"><button type="submit">Unlock</button>' + (cardErr ? '<span class="mm-err">' + esc(cardErr) + '</span>' : '') + '</form>';
           } else h += '<span></span>';
           h += '<span class="mm-c-btns"><button type="button" data-go="detail" data-i="' + act + '">Details</button><button type="button" class="pri" data-go="card" data-i="' + act + '">Scorecard</button></span></div>';
@@ -3237,6 +3261,10 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         function close() { box.hidden = true; q.setAttribute('aria-expanded', 'false'); }
         function go(i, how) {
           var r = items[i]; if (!r) return; close(); q.blur();
+          if (r.mk && r.mk !== MK) {
+            location.href = '?market=' + encodeURIComponent(r.mk) + (r.type === 'sup' ? '&sup=' + encodeURIComponent(r.s) : '&tech=' + encodeURIComponent(r.t.id)) + '&open=' + (how === 'detail' ? 'detail' : 'card');
+            return;
+          }
           var probe = document.createElement('span'); probe.style.display = 'none'; document.body.appendChild(probe);
           if (r.type === 'sup') { probe.setAttribute('data-sc-sup', r.s); probe.click(); }
           else if (how === 'detail') {
@@ -3259,12 +3287,12 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var f = e.target.closest('[data-unlock]'); if (!f) return; e.preventDefault();
           var inp = f.querySelector('input'), pw = inp.value; if (!pw || !INFO) return;
           f.classList.add('busy');
-          unlock(pw).then(function () { cardErr = ''; paint(); }, function () { cardErr = 'Wrong passcode'; paint(); var i2 = box.querySelector('[data-unlock] input'); if (i2) i2.focus(); });
+          unlock(pw, CUR).then(function () { cardErr = ''; paint(); }, function () { cardErr = 'Wrong passcode'; paint(); var i2 = box.querySelector('[data-unlock] input'); if (i2) i2.focus(); });
         });
         box.addEventListener('keydown', function (e) { if (e.key === 'Escape') { close(); q.focus(); } });
         box.addEventListener('click', function (e) {
           e.stopPropagation();
-          if (e.target.closest('[data-lock]')) { lockNow(); return; }
+          if (e.target.closest('[data-lock]')) { lockNow(CUR); return; }
           var b = e.target.closest('[data-go]'); if (b) { go(+b.dataset.i, b.dataset.go); return; }
           var row = e.target.closest('.mm-r'); if (row) go(+row.dataset.i, 'card');
         });
@@ -3272,6 +3300,19 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         document.addEventListener('keydown', function (e) {
           if (e.key === '/' && !/^(INPUT|SELECT|TEXTAREA)$/.test((document.activeElement || {}).tagName || '') && $('mx-sc').style.display !== 'flex') { e.preventDefault(); q.focus(); q.select(); }
         });
+
+        // came here from the other market's search (?tech=…&open=card|detail, or ?sup=…): open it, then tidy the address bar
+        (function () {
+          var P = new URLSearchParams(location.search), tid = P.get('tech'), sup = P.get('sup'), how = P.get('open');
+          if (!tid && !sup) return;
+          P.delete('tech'); P.delete('sup'); P.delete('open');
+          try { history.replaceState(null, '', location.pathname + (P.toString() ? '?' + P.toString() : '') + location.hash); } catch (e) {}
+          var t = tid ? ROSTER.filter(function (x) { return x.id === tid; })[0] : null;
+          if (tid && !t) return;
+          if (sup && SUPS.indexOf(sup) < 0) return;
+          items = [t ? { type: 'tech', t: t, mk: MK } : { type: 'sup', s: sup, mk: MK }];
+          setTimeout(function () { go(0, how === 'detail' ? 'detail' : 'card'); }, 50);
+        })();
       })();
 
       }
