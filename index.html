@@ -2342,12 +2342,12 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       }
       function supTable() {
         var R = supRank(state.i), m = R.m, agg = R.agg, ranked = R.ranked;
-        // whoever is 1st in the current fiscal month (the newest month) gets a glowing row, whichever month is on screen
-        var cur = SNAP.months.length - 1, lead = ((cur === state.i ? R : supRank(cur)).ranked[0] || {}).sup;
+        // whoever is 1st for the fiscal month on screen gets a glowing row
+        var lead = (ranked[0] || {}).sup;
         var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th><span>Techs</span></th><th><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="hide-sm"><span>Appts met</span></th></tr></thead>';
         var order = ranked.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
         var body = order.map(function (s, idx) {
-          var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st this fiscal month · ' : '';
+          var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st for ' + m.label + ' · ' : '';
           var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td>0</td><td colspan="5" class="l">No jobs this month</td></tr>';
           var r = rates(a);
           return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td>' + a.techs + '</td><td>' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="hide-sm">' + pct(r.met) + '</td></tr>';
