@@ -1448,22 +1448,26 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
-      /* Supervisor table on phones: techs and jobs are left out so name, tool usage, tNPS, FTR and appts met fit */
+      /* Supervisor table on phones: rank, supervisor and tool usage, tNPS, FTR only (techs, jobs and appts met show on wider screens) */
       @media (max-width: 44rem) {
         #mx-sup-table .lg-only { display: none; }
-        body:not(#_sc) #mx-sup-table td, body:not(#_sc) #mx-sup-table th > span { padding-left: 3px; padding-right: 3px; }
-        body:not(#_sc) .mx-card:has(> .mx-tablebox > #mx-sup-table) { padding-left: 12px; padding-right: 12px; }
+        body:not(#_sc) #mx-sup-table { font-size: 14px; }
+        body:not(#_sc) #mx-sup-table td, body:not(#_sc) #mx-sup-table th > span { padding-left: 6px; padding-right: 6px; }
         body:not(#_sc) #mx-sup-table th > span { white-space: normal; line-height: 1.2; }
-        body:not(#_sc) #mx-sup-table td.l.tech { white-space: normal; line-height: 1.2; min-width: 7.5rem; }
-        #mx-sup-table .sc-who { gap: 6px; }
-        #mx-sup-table .sc-who .sc-av { --av: 24px !important; flex: none; }
-        #mx-sup-table td .sub { display: block; margin-left: 0; font-size: 11px; }
-        body:not(#_sc) #mx-sup-table { font-size: 12.5px; }
         body:not(#_sc) #mx-sup-table td.rk, body:not(#_sc) #mx-sup-table th.rk > span { padding-left: 2px; padding-right: 2px; width: 1.4em; text-align: center; }
-        body:not(#_sc) #mx-sup-table td.l.tech { min-width: 0; width: 6.3rem; max-width: 6.3rem; overflow-wrap: anywhere; }
-        body:not(#_sc) #mx-sup-table tr.team td.l { white-space: normal; line-height: 1.2; }
+        body:not(#_sc) #mx-sup-table td.l.tech, body:not(#_sc) #mx-sup-table tr.team td.l { white-space: normal; line-height: 1.25; }
+        #mx-sup-table .sc-who { gap: 8px; }
+        #mx-sup-table .sc-who .sc-av { --av: 28px !important; flex: none; }
+        #mx-sup-table td .sub { display: block; margin-left: 0; font-size: 11px; }
+        body:not(#_sc) .mx-card:has(> .mx-tablebox > #mx-sup-table) { padding-left: 14px; padding-right: 14px; }
       }
-      @media (max-width: 370px) { #mx-sup-table .sc-who .sc-av { display: none; } }
+      @media (max-width: 380px) {
+        body:not(#_sc) #mx-sup-table { font-size: 13px; }
+        body:not(#_sc) #mx-sup-table td, body:not(#_sc) #mx-sup-table th > span { padding-left: 4px; padding-right: 4px; }
+        #mx-sup-table .sc-who { gap: 6px; } #mx-sup-table .sc-who .sc-av { --av: 24px !important; }
+        body:not(#_sc) .mx-card:has(> .mx-tablebox > #mx-sup-table) { padding-left: 12px; padding-right: 12px; }
+      }
+      @media (max-width: 44rem) { body:not(#_sc) #mx-sup-table th.rk > span { font-size: 0; } body:not(#_sc) #mx-sup-table th.rk > span::after { content: '#'; font-size: 12px; } }
       /* Techs table on phones: names wrap in a narrow column so tool usage, tNPS and FTR fit next to the tech */
       @media (max-width: 44rem) {
         body:not(#_sc) #mx-tech-table { font-size: 12.5px; }
@@ -1477,7 +1481,6 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       }
       /* phones: short month ticks under the slider, and tile tags wrap instead of running past the tile */
       @media (max-width: 44rem) { #mx-ticks .mx-fm { display: none; } .mx-tile .row { flex-wrap: wrap; justify-content: flex-start; column-gap: 8px; row-gap: 2px; } }
-      @media (max-width: 44rem) { body:not(#_sc) #mx-sup-table th.rk > span { font-size: 0; } body:not(#_sc) #mx-sup-table th.rk > span::after { content: '#'; font-size: 12px; } }
       /* ---- needs attention ---- */
       .mx-under { border-color: color-mix(in srgb, var(--color-bad) 35%, var(--color-border-line)); }
       .mx-under-list { display: grid; gap: 12px; }
@@ -2402,16 +2405,16 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var R = supRank(state.i), m = R.m, agg = R.agg, ranked = R.ranked;
         // whoever is 1st for the fiscal month on screen gets a glowing row
         var lead = (ranked[0] || {}).sup;
-        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th><span>Appts met</span></th></tr></thead>';
+        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="lg-only"><span>Appts met</span></th></tr></thead>';
         var order = ranked.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
         var body = order.map(function (s, idx) {
           var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st for ' + m.label + ' · ' : '';
-          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="4" class="l">No jobs this month</td></tr>';
+          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="3" class="l">No jobs this month</td><td class="lg-only"></td></tr>';
           var r = rates(a);
-          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td>' + pct(r.met) + '</td></tr>';
+          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="lg-only">' + pct(r.met) + '</td></tr>';
         }).join('');
         var t = rates(teamRow(m));
-        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td>' + pct(t.met) + '</td></tr>';
+        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="lg-only">' + pct(t.met) + '</td></tr>';
         $('mx-sup-table').innerHTML = head + '<tbody>' + body + '</tbody>';
       }
 
