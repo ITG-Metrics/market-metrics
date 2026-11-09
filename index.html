@@ -2894,6 +2894,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         }
         function shown() { return sec.style.display !== 'none' && !box.hidden; }
         set(false);
+        // the search's "Details" jump folds the banner first, so folding mid-scroll can't cancel that scroll
+        window.__mmFoldPodium = function () { if (shown() && !box.classList.contains('mx-collapsed')) set(true); armed = false; };
         bar.addEventListener('click', function () {
           var c = !box.classList.contains('mx-collapsed'); set(c);
           armed = c || window.scrollY < 60;   // opened by hand while scrolled down: leave it open
@@ -3269,7 +3271,16 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           if (r.type === 'sup') { probe.setAttribute('data-sc-sup', r.s); probe.click(); }
           else if (how === 'detail') {
             pickTech(r.t.id); var d = $('mx-detail');
-            if (d) { d.scrollIntoView({ behavior: 'smooth', block: 'start' }); d.classList.remove('mm-flash'); void d.offsetWidth; d.classList.add('mm-flash'); }
+            if (d) {
+              if (window.__mmFoldPodium) window.__mmFoldPodium();
+              d.classList.remove('mm-flash'); void d.offsetWidth; d.classList.add('mm-flash');
+              // wait a frame for the redrawn table and folded banner to settle, then scroll
+              requestAnimationFrame(function () { requestAnimationFrame(function () {
+                d.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // backup: if anything interrupted the smooth scroll, finish the jump
+                setTimeout(function () { var y = d.getBoundingClientRect().top; if (Math.abs(y - 90) > 40) d.scrollIntoView({ block: 'start' }); }, 900);
+              }); });
+            }
           } else { probe.setAttribute('data-sc-tech', r.t.id); probe.click(); }
           probe.remove();
         }
