@@ -1371,7 +1371,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
 
     </style>
     <style id="metrics-style">
-      body:not(#_sc) #metrics-section { --mx-ok: color-mix(in srgb, var(--color-ok) 80%, var(--color-fg)); max-width: 80rem; width: calc(100% - 32px); margin: 0 auto 24px; display: grid; gap: 24px; }
+      body:not(#_sc) #metrics-section { --mx-ok: color-mix(in srgb, var(--color-ok) 80%, var(--color-fg)); max-width: 80rem; width: calc(100% - 32px); margin: 0 auto 24px; display: grid; gap: 24px; grid-template-columns: minmax(0, 1fr); }
       body:not(#_sc) #metrics-section[style*="display: none"], body:not(#_sc) #metrics-section[style*="display:none"] { display: none !important; }
       .mx-head { display: flex; justify-content: space-between; align-items: end; gap: 8px 16px; flex-wrap: wrap; }
       body:not(#_sc) .mx-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 28px; margin: 0; color: var(--color-fg); }
@@ -1448,6 +1448,26 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
+      /* Supervisor table on phones: name + tool usage, tNPS, FTR first; appts met, techs and jobs follow (scroll right) */
+      #mx-sup-table .sm-only { display: none; }
+      @media (max-width: 44rem) {
+        #mx-sup-table .lg-only { display: none; }
+        #mx-sup-table .sm-only { display: table-cell; }
+        body:not(#_sc) #mx-sup-table td, body:not(#_sc) #mx-sup-table th > span { padding-left: 3px; padding-right: 3px; }
+        body:not(#_sc) .mx-card:has(> .mx-tablebox > #mx-sup-table) { padding-left: 12px; padding-right: 12px; }
+        body:not(#_sc) #mx-sup-table th > span { white-space: normal; line-height: 1.2; }
+        body:not(#_sc) #mx-sup-table td.l.tech { white-space: normal; line-height: 1.2; min-width: 7.5rem; }
+        #mx-sup-table .sc-who { gap: 6px; }
+        #mx-sup-table .sc-who .sc-av { --av: 24px !important; flex: none; }
+        #mx-sup-table td .sub { display: block; margin-left: 0; font-size: 11px; }
+        body:not(#_sc) #mx-sup-table { font-size: 12.5px; }
+        body:not(#_sc) #mx-sup-table td.rk, body:not(#_sc) #mx-sup-table th.rk > span { padding-left: 2px; padding-right: 2px; width: 1.4em; text-align: center; }
+        body:not(#_sc) #mx-sup-table td.l.tech { min-width: 0; width: 6.6rem; max-width: 6.6rem; overflow-wrap: anywhere; }
+      }
+      @media (max-width: 370px) { #mx-sup-table .sc-who .sc-av { display: none; } }
+      /* phones: short month ticks under the slider, and tile tags wrap instead of running past the tile */
+      @media (max-width: 44rem) { #mx-ticks .mx-fm { display: none; } .mx-tile .row { flex-wrap: wrap; justify-content: flex-start; column-gap: 8px; row-gap: 2px; } }
+      @media (max-width: 44rem) { body:not(#_sc) #mx-sup-table th.rk > span { font-size: 0; } body:not(#_sc) #mx-sup-table th.rk > span::after { content: '#'; font-size: 12px; } }
       /* ---- needs attention ---- */
       .mx-under { border-color: color-mix(in srgb, var(--color-bad) 35%, var(--color-border-line)); }
       .mx-under-list { display: grid; gap: 12px; }
@@ -1535,7 +1555,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-tip .sw { display: inline-block; width: .55rem; height: .55rem; border-radius: 2px; margin-right: .35em; }
 
       /* appreciation banner (scorecard .sc-champ) */
-      .mx-podium { display: grid; gap: 8px; }
+      .mx-podium { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
       .mx-champ, .mx-place { --gold: #b8860b; --gold-text: color-mix(in srgb, #b8860b 62%, var(--color-fg)); }
       :root[data-theme="dark"] .mx-champ, :root[data-theme="dark"] .mx-place { --gold: #f2c94c; --gold-text: #f2c94c; }
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mx-champ, :root:not([data-theme="light"]) .mx-place { --gold: #f2c94c; --gold-text: #f2c94c; } }
@@ -1556,7 +1576,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-champ-stat .c.good { color: var(--mx-ok); }
       .mx-confetti { position: absolute; inset: 0 0 auto auto; width: 46%; height: 100%; pointer-events: none; opacity: .55; }
       .mx-places { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      @media (max-width: 44rem) { .mx-places { grid-template-columns: 1fr; } }
+      @media (max-width: 44rem) { .mx-places { grid-template-columns: minmax(0, 1fr); } }
       .mx-place { --medal: #8a94a6; border: 1px solid color-mix(in srgb, var(--medal) 45%, var(--color-border-line)); border-radius: calc(var(--cds-radius) * 1.5); background: linear-gradient(120deg, color-mix(in srgb, var(--medal) 12%, var(--color-panel)), var(--color-panel) 62%); padding: 14px 16px; display: grid; gap: 10px; }
       .mx-place.bronze { --medal: #b87333; }
       .mx-place-top { display: flex; gap: 12px; align-items: center; }
@@ -2263,7 +2283,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       slider.max = SNAP.months.length - 1; slider.value = state.i;
       ticks.innerHTML = SNAP.months.map(function (m, k) {
         var left = SNAP.months.length > 1 ? (100 * k / (SNAP.months.length - 1)) : 0;
-        return '<button type="button" data-i="' + k + '" style="left:' + left + '%">' + esc(m.label) + '</button>';
+        return '<button type="button" data-i="' + k + '" style="left:' + left + '%">' + esc(m.label).replace(/ FM$/, '<span class="mx-fm"> FM</span>') + '</button>';
       }).join('');
       ticks.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; state.i = +b.dataset.i; slider.value = state.i; render(); });
       slider.addEventListener('input', function () { state.i = +slider.value; render(); });
@@ -2353,16 +2373,16 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var R = supRank(state.i), m = R.m, agg = R.agg, ranked = R.ranked;
         // whoever is 1st for the fiscal month on screen gets a glowing row
         var lead = (ranked[0] || {}).sup;
-        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th><span>Techs</span></th><th><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="hide-sm"><span>Appts met</span></th></tr></thead>';
+        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th><span>Appts met</span></th><th class="sm-only"><span>Techs</span></th><th class="sm-only"><span>Jobs</span></th></tr></thead>';
         var order = ranked.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
         var body = order.map(function (s, idx) {
           var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st for ' + m.label + ' · ' : '';
-          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td>0</td><td colspan="5" class="l">No jobs this month</td></tr>';
+          var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="4" class="l">No jobs this month</td><td class="sm-only">0</td><td class="sm-only">0</td></tr>';
           var r = rates(a);
-          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td>' + a.techs + '</td><td>' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="hide-sm">' + pct(r.met) + '</td></tr>';
+          return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td>' + pct(r.met) + '</td><td class="sm-only">' + a.techs + '</td><td class="sm-only">' + num(r.jobs) + '</td></tr>';
         }).join('');
         var t = rates(row(m.team));
-        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td>' + Object.keys(m.techs).length + '</td><td>' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="hide-sm">' + pct(t.met) + '</td></tr>';
+        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td>' + pct(t.met) + '</td><td class="sm-only">' + Object.keys(m.techs).length + '</td><td class="sm-only">' + num(t.jobs) + '</td></tr>';
         $('mx-sup-table').innerHTML = head + '<tbody>' + body + '</tbody>';
       }
 
