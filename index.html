@@ -1441,6 +1441,12 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table th button:focus-visible { outline: 2px solid var(--cds-chart-axis); outline-offset: -2px; }
       .mx-table th[aria-sort="ascending"] button::after { content: " ↑"; }
       .mx-table th[aria-sort="descending"] button::after { content: " ↓"; }
+      #mx-sup-table th span[data-k] { cursor: pointer; user-select: none; }
+      #mx-sup-table th span[data-k]:hover { color: var(--color-fg, inherit); }
+      #mx-sup-table th span[data-k]:focus-visible { outline: 2px solid var(--cds-chart-axis); outline-offset: -2px; }
+      #mx-sup-table th[aria-sort="ascending"] span::after { content: " ↑"; }
+      #mx-sup-table th[aria-sort="descending"] span::after { content: " ↓"; }
+      #mx-sup-table th.rk[aria-sort] span::after { content: none; }
       body:not(#_sc) .mx-table td.good { color: var(--mx-ok); font-weight: 600; }
       body:not(#_sc) .mx-table td.miss { color: var(--color-bad); font-weight: 600; }
       body:not(#_sc) .mx-table td.dim, body:not(#_sc) .mx-table tr.away td { color: var(--color-fg-muted); }
@@ -1467,7 +1473,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         #mx-sup-table .sc-who { gap: 6px; } #mx-sup-table .sc-who .sc-av { --av: 24px !important; }
         body:not(#_sc) .mx-card:has(> .mx-tablebox > #mx-sup-table) { padding-left: 12px; padding-right: 12px; }
       }
-      @media (max-width: 44rem) { body:not(#_sc) #mx-sup-table th.rk > span { font-size: 0; } body:not(#_sc) #mx-sup-table th.rk > span::after { content: '#'; font-size: 12px; } }
+      @media (max-width: 44rem) { body:not(#_sc) #mx-sup-table th.rk > span { font-size: 0; } body:not(#_sc) #mx-sup-table th.rk > span::after { content: '#'; font-size: 12px; } body:not(#_sc) #mx-sup-table th.rk > span { width: 16px; text-align: center; } }
       /* Techs table on phones: names wrap in a narrow column so tool usage, tNPS and FTR fit next to the tech */
       @media (max-width: 44rem) {
         body:not(#_sc) #mx-tech-table { font-size: 12.5px; }
@@ -2402,13 +2408,33 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         ranked.sort(function (a, b) { return a.avg - b.avg || (FORMULA === 'company' ? 0 : b.gap - a.gap) || V(b, 'ftr') - V(a, 'ftr'); });
         return { m: m, agg: agg, ranked: ranked };
       }
+      // By supervisor table sorting: click (or Enter) on a header. The Rank number and the 1st-place glow always stay the
+      // official ranking; sorting only changes the row order. The market totals row stays at the bottom.
+      var supSort = { k: 'rank', dir: 1 };
+      var SUP_FIRST_DIR = { rank: 1, sup: 1 };   // everything else starts high-to-low on first click
+      function supSortBy(k) {
+        if (supSort.k === k) supSort.dir = -supSort.dir; else supSort = { k: k, dir: SUP_FIRST_DIR[k] || -1 };
+        supTable();
+        var f = document.querySelector('#mx-sup-table th span[data-k="' + k + '"]'); if (f) f.focus();
+      }
+      $('mx-sup-table').addEventListener('click', function (e) { var h = e.target.closest('th span[data-k]'); if (h) { e.stopPropagation(); supSortBy(h.dataset.k); } });
+      $('mx-sup-table').addEventListener('keydown', function (e) { var h = e.target.closest('th span[data-k]'); if (h && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); supSortBy(h.dataset.k); } });
       function supTable() {
         var R = supRank(state.i), m = R.m, agg = R.agg, ranked = R.ranked;
         // whoever is 1st for the fiscal month on screen gets a glowing row
         var lead = (ranked[0] || {}).sup;
-        var head = '<thead><tr><th class="rk"><span>Rank</span></th><th class="l"><span>Supervisor</span></th><th class="lg-only"><span>Techs</span></th><th class="lg-only"><span>Jobs</span></th><th><span>Tool usage</span></th><th class="lg-only" title="Jobs where tool usage was missed"><span>TU fails</span></th><th><span>tNPS</span></th><th class="lg-only" title="Detractor surveys"><span>tNPS fails</span></th><th><span>FTR</span></th><th class="lg-only" title="FTR fails"><span>FTR fails</span></th></tr></thead>';
-        var order = ranked.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
-        var body = order.map(function (s, idx) {
+        var AS = function (k) { return supSort.k === k ? ' aria-sort="' + (supSort.dir > 0 ? 'ascending' : 'descending') + '"' : ''; };
+        var head = '<thead><tr><th class="rk"' + AS('rank') + '><span role="button" tabindex="0" data-k="rank">Rank</span></th><th class="l"' + AS('sup') + '><span role="button" tabindex="0" data-k="sup">Supervisor</span></th><th class="lg-only"' + AS('techs') + '><span role="button" tabindex="0" data-k="techs">Techs</span></th><th class="lg-only"' + AS('jobs') + '><span role="button" tabindex="0" data-k="jobs">Jobs</span></th><th' + AS('tu') + '><span role="button" tabindex="0" data-k="tu">Tool usage</span></th><th class="lg-only" title="Jobs where tool usage was missed"' + AS('tu_fail') + '><span role="button" tabindex="0" data-k="tu_fail">TU fails</span></th><th' + AS('tnps') + '><span role="button" tabindex="0" data-k="tnps">tNPS</span></th><th class="lg-only" title="Detractor surveys"' + AS('det') + '><span role="button" tabindex="0" data-k="det">tNPS fails</span></th><th' + AS('ftr') + '><span role="button" tabindex="0" data-k="ftr">FTR</span></th><th class="lg-only" title="FTR fails"' + AS('ftr_fail') + '><span role="button" tabindex="0" data-k="ftr_fail">FTR fails</span></th></tr></thead>';
+        var place = {}; ranked.forEach(function (x, i) { x.rank = i + 1; x.techs = agg[x.sup].techs; x.tu_fail = rates(agg[x.sup]).tu_fail; place[x.sup] = i + 1; });
+        var sk = supSort.k, sd = supSort.dir;
+        var sorted = ranked.slice().sort(function (a, b) {
+          if (sk === 'sup') return sd * a.sup.localeCompare(b.sup);
+          var va = a[sk], vb = b[sk];
+          if (va == null && vb == null) return a.rank - b.rank; if (va == null) return 1; if (vb == null) return -1;   // blanks always last
+          return sd * (va - vb) || a.rank - b.rank;
+        });
+        var order = sorted.map(function (x) { return x.sup; }).concat(SUPS.filter(function (s) { return !agg[s]; }));
+        var body = order.map(function (s) { var idx = place[s] - 1;
           var L = s === lead ? ' class="lead"' : '', LT = s === lead ? '1st for ' + m.label + ' · ' : '';
           var a = agg[s]; if (!a) return '<tr class="away' + (L ? ' lead' : '') + '" data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">–</td><td class="l"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">0</td><td class="lg-only"></td><td colspan="6" class="l">No jobs this month</td></tr>';
           var r = rates(a);
