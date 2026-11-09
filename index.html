@@ -2337,7 +2337,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           return '<tr data-sc-sup="' + esc(s) + '" title="Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td>' + a.techs + '</td><td>' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="hide-sm">' + pct(r.met) + '</td></tr>';
         }).join('');
         var t = rates(row(m.team));
-        body += '<tr class="team"><td class="rk"></td><td class="l">Miami techs (all)</td><td>' + Object.keys(m.techs).length + '</td><td>' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="hide-sm">' + pct(t.met) + '</td></tr>';
+        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td>' + Object.keys(m.techs).length + '</td><td>' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="hide-sm">' + pct(t.met) + '</td></tr>';
         $('mx-sup-table').innerHTML = head + '<tbody>' + body + '</tbody>';
       }
 
