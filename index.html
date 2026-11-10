@@ -2916,16 +2916,20 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var win = full.slice(-3); if (!win.length) { $('mx-podium').hidden = true; return; }
         var SUM = COLS.concat(['tu_w', 'tu_wj']).filter(function (c) { return ['tu', 'tnps', 'ftr', 'pht', 'met', 'rework', 'repeat'].indexOf(c) < 0; });
         function aggOf(ids) {
-          var a = { techs: {} }; SUM.forEach(function (c) { a[c] = 0; }); a.rep_w = 0;
-          win.forEach(function (m) { ids.forEach(function (id) {
-            var r = row(m.techs[id]); if (!r) return; a.techs[id] = 1;
+          var a = { techs: {}, mos: {} }; SUM.forEach(function (c) { a[c] = 0; }); a.rep_w = 0;
+          win.forEach(function (m, mi) { ids.forEach(function (id) {
+            var r = row(m.techs[id]); if (!r) return; a.techs[id] = 1; if (r.jobs > 0) a.mos[mi] = 1;
             SUM.forEach(function (c) { a[c] += r[c] || 0; }); a.rep_w += (r.repeat || 0) * (r.jobs || 0);
           }); });
-          var x = rates(a); x.techs = Object.keys(a.techs).length; x.repeat = a.jobs ? a.rep_w / a.jobs : null; return x;
+          var x = rates(a); x.techs = Object.keys(a.techs).length; x.months = Object.keys(a.mos).length; x.repeat = a.jobs ? a.rep_w / a.jobs : null; return x;
         }
         var team = aggOf(ROSTER.map(function (t) { return t.id; }));
         var list = SUPS.map(function (s) { var x = aggOf(ROSTER.filter(function (t) { return t.sup === s; }).map(function (t) { return t.id; })); x.sup = s; return x; })
           .filter(function (x) { return x.jobs > 0; });
+        // only supervisors with data in all 3 fiscal months can place
+        var short = list.filter(function (x) { return x.months < win.length; }).map(function (x) { return x.sup; });
+        list = list.filter(function (x) { return x.months >= win.length; });
+        if (!list.length) { $('mx-podium').hidden = true; return; }
         ['tu', 'tnps', 'ftr'].forEach(function (k) {
           list.slice().sort(function (a, b) { return b[k] - a[k]; }).forEach(function (x, i) { x['rk_' + k] = i + 1; });
         });
@@ -2991,7 +2995,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         $('mx-podbar-items').innerHTML = top3.map(function (x, i) {
           return '<span class="mx-podbar-item"><span aria-hidden="true">' + ICO[i] + '</span><span class="lbl">' + LBL[i] + '</span>' + AV(x.sup, 22) + '<b>' + esc(x.sup) + '</b></span>';
         }).join('');
-        $('mx-champ-foot').textContent = 'Ranked by average place across tool usage, tNPS and FTR for each supervisor\'s working techs over the last 3 complete fiscal months (' + months + '). Ties go to whoever is closest to target.';
+        $('mx-champ-foot').textContent = 'Ranked by average place across tool usage, tNPS and FTR for each supervisor\'s working techs over the last 3 complete fiscal months (' + months + '). Ties go to whoever is closest to target. Only supervisors with data in all ' + win.length + ' fiscal months are ranked' + (short.length ? '; not ranked: ' + short.join(', ') : '') + '.';
       }
       podium();
       (function () {
