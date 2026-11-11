@@ -1927,10 +1927,10 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
             <div class="mx-hero" id="mx-hero" aria-label="Tool usage, tNPS and FTR"></div>
 
             <!-- Supervisor appreciation banner (scorecard style) -->
-            <div class="mx-podium" id="mx-podium">
-              <button type="button" class="mx-podbar" id="mx-podbar" aria-expanded="true" aria-controls="mx-podium">
+            <div class="mx-podium mx-collapsed" id="mx-podium">
+              <button type="button" class="mx-podbar" id="mx-podbar" aria-expanded="false" aria-controls="mx-podium">
                 <span class="mx-podbar-items" id="mx-podbar-items"></span>
-                <span class="mx-podbar-toggle"><span id="mx-podbar-label">Hide</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span class="mx-podbar-toggle"><span id="mx-podbar-label">Show</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></span>
               </button>
               <div class="mx-champ" role="region" aria-label="Top supervisor">
                 <svg class="mx-confetti" viewBox="0 0 300 160" preserveAspectRatio="xMaxYMin slice" aria-hidden="true">
@@ -3107,8 +3107,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       }
       podium();
       (function () {
-        // Banner opens whenever Metrics is shown, folds up on the first scroll down,
-        // and stays where the person puts it until they're back at the top of the page.
+        // Banner starts folded (Dillon, Nov 11): only the slim top-3 bar shows until someone taps Show.
+        // Once opened, it still folds on the first scroll down.
         var box = $('mx-podium'), bar = $('mx-podbar'), sec = $('metrics-section'), armed = true, lastY = window.scrollY;
         function set(c) {
           box.classList.toggle('mx-collapsed', c);
@@ -3116,7 +3116,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           $('mx-podbar-label').textContent = c ? 'Show' : 'Hide';
         }
         function shown() { return sec.style.display !== 'none' && !box.hidden; }
-        set(false);
+        set(true); armed = false;
         // the search's "Details" jump folds the banner first, so folding mid-scroll can't cancel that scroll
         window.__mmFoldPodium = function () { if (shown() && !box.classList.contains('mx-collapsed')) set(true); armed = false; };
         bar.addEventListener('click', function () {
@@ -3134,11 +3134,11 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           set(true); armed = false;
           window.scrollBy(0, anchor.getBoundingClientRect().top - before);
         }, { passive: true });
-        // reopen each time someone navigates to Metrics
+        // fold again each time someone navigates to Metrics
         var wasShown = shown();
         new MutationObserver(function () {
           var now = shown();
-          if (now && !wasShown) { set(false); armed = true; lastY = window.scrollY; }
+          if (now && !wasShown) { set(true); armed = false; lastY = window.scrollY; }
           wasShown = now;
         }).observe(sec, { attributes: true, attributeFilter: ['style'] });
       })();
