@@ -2277,7 +2277,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var NAMES = { Dade: ['Miami', 'Miami Dade'], Broward: ['Broward', 'Broward'] }, nm = NAMES[MARKET] || [MARKET, MARKET];
           document.getElementById('mm-title').textContent = 'Broward & Dade Metrics'; /* same title on both markets (Dillon, Nov 12) */
           document.getElementById('mm-sub').textContent = nm[1] + ' · BP-Ontrac Team Metrics';
-          window.__mmTitle = TITLES;
+          window.__mmTitle = { en: 'Broward & Dade Metrics', es: 'Métricas de Broward y Dade', ht: 'Metrik Broward ak Dade', uk: 'Показники Бровард і Дейд' };
           document.title = window.__mmTitle[document.documentElement.lang] || window.__mmTitle.en;
           var keys = Object.keys(D.markets), nav = document.getElementById('mm-markets');
           if (keys.length > 1) {
