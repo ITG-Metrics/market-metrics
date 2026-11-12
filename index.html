@@ -2378,7 +2378,10 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       const ctx = cv.getContext('2d'), S = size, R = S / 2, sc = S / 92;
       const lo = target - 12, goalF = (target - lo) / (100 - lo) * .8;
       const want = Math.max(.08, Math.min(.8, (value - lo) / (100 - lo) * .8));
-      const C = value >= target ? css('--orb-ok') : target - value <= 1 ? css('--orb-near') : css('--orb-bad');
+      /* Yellow band (Dillon, Nov 11): tool usage has none (red under 99.5); tNPS and FTR are yellow only within 0.5 points of target. */
+      const nearBand = target >= 99 ? 0 : 0.5;
+      const vr = Math.round(value * 10) / 10; /* judge on the shown (1-decimal) value */
+      const C = vr >= target ? css('--orb-ok') : target - vr <= nearBand ? css('--orb-near') : css('--orb-bad');
       cv.setAttribute('aria-hidden', 'true');
       let lvl = still ? want : 0, T = Math.random() * 10;
       const NP = Math.round(14 + 10 * sc), parts = [];
@@ -2432,7 +2435,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var host = $('mx-hero'); if (!host) return; host.replaceChildren();
         var big = window.innerWidth < 544 ? Math.max(74, Math.min(96, Math.floor((window.innerWidth - 60) / 3 - 14))) : window.innerWidth < 960 ? 110 : 136;
         [['tu', 'Tool usage'], ['tnps', 'tNPS'], ['ftr', 'FTR']].forEach(function (x) {
-          var k = x[0], v = cur[k], T = TARGET[k], cls = v == null ? '' : v >= T ? 'good' : T - v <= 1 ? 'near' : 'bad';
+          var k = x[0], v = cur[k], T = TARGET[k], vr = v == null ? null : Math.round(v * 10) / 10, cls = v == null ? '' : vr >= T ? 'good' : T - vr <= (T >= 99 ? 0 : 0.5) ? 'near' : 'bad';
           var card = document.createElement('div'); card.className = 'mx-hero-card ' + cls;
           if (v != null) { var o = MXorb(v, T, big); o.cv.title = 'Filled to ' + pct(v) + '; the notches on the glass mark the ' + T + '% target'; card.appendChild(o.cv); }
           var tx = document.createElement('div'); tx.className = 'mx-hero-txt';
