@@ -1726,7 +1726,9 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .scm-sec h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--color-fg); }
       .scm-trends { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
       @media (max-width: 60rem) { .scm-trends { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      .scm-trend svg { display: block; overflow: visible; }
+      .scm-trend { position: relative; }
+      .scm-trend svg { display: block; overflow: visible; cursor: crosshair; }
+      .scm-trend .mx-tip { z-index: 3; white-space: nowrap; }
       .scm-trend-h { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-fg-muted); margin-bottom: 2px; }
       .scm-trend-h b { color: var(--color-fg); font-weight: 600; }
       .scm-trend-h b.bad { color: var(--color-bad); }
@@ -3248,7 +3250,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         function chartIdx() { return windowIdx(Math.max(scK, 2)); }
         function chartLabel() { var ix = chartIdx(), a = SNAP.months[ix[0]].label, b = SNAP.months[ix[ix.length - 1]].label;
           return a + ' – ' + b + (scK === 1 ? ' (this month vs last)' : ''); }
-        function trend(k, mine, base, idxs) {
+        function trend(k, mine, base, idxs, mineName) {
           var n = mine.length;
           var W = 260, H = 100, l = 36, t = 10, b = H - 18;
           var vals = mine.concat(base).filter(function (v) { return v != null && !isNaN(v); }); if (TARGET[k] != null) vals.push(TARGET[k]);
@@ -3273,16 +3275,46 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           g += '<path class="ln" pathLength="1" d="' + path(mine) + '" fill="none" stroke="var(--sc-c1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
           mine.forEach(function (v, i) { if (v == null || isNaN(v)) return; g += '<circle class="dt" style="animation-delay:' + (0.15 + 0.75 * i / Math.max(1, n - 1)).toFixed(2) + 's" cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="3" fill="' + (miss(v, i) ? 'var(--color-bad)' : 'var(--sc-c1)') + '" stroke="var(--color-panel)" stroke-width="1.2"/>'; });
           var last = null; for (var i = mine.length - 1; i >= 0; i--) if (mine[i] != null && !isNaN(mine[i])) { last = i; break; }
-          return '<div class="scm-trend"><div class="scm-trend-h"><span>' + NM[k] + '</span><b class="' + (last != null && miss(mine[last], last) ? 'bad' : '') + '">' + (last == null ? '—' : pct(mine[last])) + '</b></div>' +
+          // hover / tap shows that month's numbers (Dillon, Nov 12)
+          g += '<line class="scm-rule" x1="0" x2="0" y1="' + t + '" y2="' + b + '" stroke="var(--cds-chart-axis)" opacity="0"/>';
+          var tipData = { w: W, xs: idxs.map(function (mi, i) { return +x(i).toFixed(1); }), ys: mine.map(function (v) { return v == null || isNaN(v) ? null : +y(v).toFixed(1); }),
+            lab: idxs.map(function (mi) { return SNAP.months[mi].label + (mi === L ? ' (to date)' : ''); }),
+            a: mine.map(function (v) { return v == null || isNaN(v) ? '—' : pct(v); }), b: base.map(function (v) { return v == null || isNaN(v) ? '—' : pct(v); }),
+            an: mineName || 'Tech', bad: mine.map(function (v, i) { return v != null && !isNaN(v) && miss(v, i); }) };
+          return '<div class="scm-trend" data-tip="' + esc(JSON.stringify(tipData)) + '"><div class="scm-trend-h"><span>' + NM[k] + '</span><b class="' + (last != null && miss(mine[last], last) ? 'bad' : '') + '">' + (last == null ? '—' : pct(mine[last])) + '</b></div>' +
             '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" aria-hidden="true">' + g + '</svg></div>';
         }
-        function trends(fnMine, fnBase) {
+        function trends(fnMine, fnBase, mineName) {
           var ix = chartIdx();
           return '<div class="scm-trends">' + ['ftr', 'tnps', 'tu', 'repeat'].map(function (k) {
-            return trend(k, ix.map(function (i) { return fnMine(i, k); }), ix.map(function (i) { return fnBase(i, k); }), ix);
+            return trend(k, ix.map(function (i) { return fnMine(i, k); }), ix.map(function (i) { return fnBase(i, k); }), ix, mineName);
           }).join('') + '</div><p class="scm-foot">Latest month shown top right of each chart. *Month to date.</p>';
         }
         function marketAt(i, k) { return compile([teamRow(SNAP.months[i])])[k]; }
+        // Trend hover: the nearest month's tech (or team) and market numbers in a small box, with a guide line.
+        if (!window.__scmTrendTip) {
+          window.__scmTrendTip = true;
+          var tipShow = function (box, clientX) {
+            var d; try { d = JSON.parse(box.dataset.tip); } catch (e) { return; }
+            var svg = box.querySelector('svg'); if (!svg) return; var rc = svg.getBoundingClientRect(); if (!rc.width) return;
+            var vx = (clientX - rc.left) / rc.width * d.w, i = 0;
+            d.xs.forEach(function (xv, j) { if (Math.abs(xv - vx) < Math.abs(d.xs[i] - vx)) i = j; });
+            var rule = svg.querySelector('.scm-rule'); if (rule) { rule.setAttribute('x1', d.xs[i]); rule.setAttribute('x2', d.xs[i]); rule.setAttribute('opacity', 1); }
+            var tip = box.querySelector('.mx-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'mx-tip'; box.appendChild(tip); }
+            tip.innerHTML = '<div class="k">' + esc(d.lab[i]) + '</div><div><span class="sw" style="background:var(--sc-c1)"></span>' + esc(d.an) + ' <b' + (d.bad[i] ? ' style="color:var(--color-bad)"' : '') + '>' + esc(d.a[i]) + '</b></div><div><span class="sw" style="background:var(--cds-chart-muted)"></span>Market ' + esc(d.b[i]) + '</div>';
+            tip.hidden = false;
+            var px = d.xs[i] / d.w * rc.width + (rc.left - box.getBoundingClientRect().left), tw = tip.offsetWidth;
+            tip.style.left = (px + 10 + tw <= box.clientWidth ? px + 10 : Math.max(0, px - tw - 10)) + 'px';
+            tip.style.top = (svg.getBoundingClientRect().top - box.getBoundingClientRect().top + 2) + 'px';
+          };
+          var tipHide = function (box) { var tip = box.querySelector('.mx-tip'); if (tip) tip.hidden = true; var r = box.querySelector('.scm-rule'); if (r) r.setAttribute('opacity', 0); };
+          document.addEventListener('pointermove', function (e) {
+            var box = e.target.closest && e.target.closest('.scm-trend[data-tip]');
+            document.querySelectorAll('.scm-trend[data-tip]').forEach(function (b) { if (b !== box) tipHide(b); });
+            if (box) tipShow(box, e.clientX);
+          }, { passive: true });
+          document.addEventListener('pointerdown', function (e) { var box = e.target.closest && e.target.closest('.scm-trend[data-tip]'); if (box) tipShow(box, e.clientX); });
+        }
         function bar() {
           return '<div class="scm-bar"><span class="scm-legend"><i></i>' + (cur.type === 'tech' ? 'Tech' : 'Team') + '<i class="mk"></i>Market<i class="tg"></i>Target</span>' +
             '<div class="scm-seg" role="group" aria-label="Timeframe">' + KS.map(function (x) { return '<button type="button" data-sc-k="' + x[0] + '" aria-pressed="' + (scK === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div></div>';
@@ -3337,7 +3369,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
             '<div class="scm-badges">' + badge('Supervisor rank', sr[sup] ? ord(sr[sup]) + ' <small>of ' + sr._n + '</small>' : '—') +
             badge('Team jobs', num(c.jobs)) + badge('Jobs per tech', active.length ? num(c.jobs / active.length) : '—') + '</div></div>';
           var body = tiles(c, mk, 'Market', active.length + ' techs with jobs');
-          body += '<div class="scm-sec"><h3>Team trend · ' + esc(chartLabel()) + '</h3>' + trends(function (i, k) { var x = poolAt(ids, [i]); return x.jobs ? x[k] : null; }, marketAt) + '</div>';
+          body += '<div class="scm-sec"><h3>Team trend · ' + esc(chartLabel()) + '</h3>' + trends(function (i, k) { var x = poolAt(ids, [i]); return x.jobs ? x[k] : null; }, marketAt, 'Team') + '</div>';
           var tb = '<div class="scm-tablebox"><table class="mx-table scm-table"><thead><tr><th class="rk"><span>Team</span></th><th class="l"><span>Tech</span></th><th><span>Market</span></th><th><span>Score</span></th><th><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="l"><span>Status</span></th></tr></thead><tbody>' +
             rows.map(function (r) {
               var m = mr[r.t.id];
