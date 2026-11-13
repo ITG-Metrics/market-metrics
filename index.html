@@ -2713,8 +2713,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       var TT = [
         ['rank', 'Rank', 'rk'], ['id', 'Tech', 'l'], ['score', 'Score', ''], ['misses', 'Status', 'l'], ['jobs', 'Jobs', 'hide-sm'], ['tc_share', 'Job mix', 'hide-sm'],
         ['tu', 'Tool usage', 'grp'], ['tnps', 'tNPS', ''], ['tnps_3mo', 'tNPS 3 mo', 'hide-sm'], ['tnps_fails', 'tNPS fails', 'hide-sm'],
-        ['ftr', 'FTR', ''], ['ftr_fails', 'FTR fails', 'hide-sm'], ['ftr_needed', 'Fixes to target', 'hide-sm'],
-        ['repeat', 'Repeat', 'grp hide-sm'], ['rework', 'Rework', 'hide-sm'], ['pht', 'PHT pass', 'hide-sm'], ['met', 'Appts met', 'hide-sm'], ['hist', 'FTR, 6 months', 'hide-sm']
+        ['ftr', 'FTR', ''], ['ftr_fails', 'FTR fails', 'hide-sm'], ['ftr_needed', 'Fixes to target', 'hide-sm']
+        // Repeat, Rework, PHT pass, Appts met and FTR 6-month columns removed (Dillon, Nov 12), same as the team site.
       ];
       // Ranking score (tech-ranking-score method): 60% FTR, 30% tNPS, 10% tool usage over the timeframe.
       // FTR and tNPS are pulled toward the group's pooled average (as if every tech had 20 extra FTR jobs and 5 extra
@@ -2749,6 +2749,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       }
       function drawTable() {
         $('mx-tt-title').textContent = ts.K > 1 ? 'Techs, last ' + ts.K + ' months' : 'Techs this fiscal month';
+        if (!TT.some(function (c) { return c[0] === ts.sort; })) { ts.sort = 'rank'; ts.dir = 1; }
         var rows = tableRows(), k = ts.sort, dir = ts.dir;
         rows.sort(function (a, b) {
           var va = k === 'id' ? a.t.id : k === 'hist' ? a.ftr : a[k], vb = k === 'id' ? b.t.id : k === 'hist' ? b.ftr : b[k];
@@ -2792,8 +2793,6 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           td(r.ftr_fails == null ? '—' : String(r.ftr_fails), 'hide-sm' + (r.ftr_fails > 0 ? ' miss' : ''));
           var fx = td(r.ftr_needed > 0 ? String(r.ftr_needed) : '—', 'hide-sm' + (r.ftr_needed > 0 ? ' miss' : ''));
           if (r.ftr_needed == null && !r.away) fx.title = 'Shown for the current month only';
-          td(pct(r.repeat), 'grp hide-sm'); td(pct(r.rework), 'hide-sm'); td(pct(r.pht), 'hide-sm'); td(pct(r.met), 'hide-sm');
-          spark(td(null, 'hide-sm'), r.hist);
           phoneOrder(tr);
           var pick = function () { pickTech(r.t.id); };
           tr.addEventListener('click', pick);
