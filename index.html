@@ -13,7 +13,7 @@
     <script>
       window.goatcounter = { path: function () {
         var m = new URLSearchParams(location.search).get('market');
-        return location.pathname + '?market=' + (m === 'Broward' ? 'Broward' : 'Dade');
+        return location.pathname + '?market=' + (m === 'Broward' ? 'Broward' : m === 'All' ? 'All' : 'Dade');
       } };
     </script>
     <script data-goatcounter="https://dillon-scorecard.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -1884,6 +1884,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       @keyframes mm-flash { 0%, 30% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--sc-c1) 55%, transparent); } 100% { box-shadow: 0 0 0 3px transparent; } }
       .mm-markets { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: 999px; padding: 2px; background: var(--color-panel); }
       .mm-markets[hidden] { display: none; }
+      html.mx-all #mx-techs-card, html.mx-all #mx-detail, html.mx-all #mx-under { display: none !important; }
       body:not(#_sc) .mm-markets a { font-size: 12px; color: var(--color-fg-muted); text-decoration: none; padding: 4px 12px; border-radius: 999px; white-space: nowrap; }
       body:not(#_sc) .mm-markets a[aria-current="page"] { background: var(--color-fg); color: var(--color-bg); }
       body:not(#_sc) #metrics-section { margin-top: 0; }
@@ -2277,9 +2278,13 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       fetch('data/market.json', { cache: 'no-cache' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function (D) {
+          var REAL = Object.keys(D.markets);
+          // "Both markets" tab (Dillon, Nov 12): Dade + Broward added together, supervisors only (no tech lists).
+          if (REAL.length > 1) D.markets.All = combineMarkets(D, REAL);
           if (!D.markets[MARKET]) MARKET = 'Dade';
           var M = D.markets[MARKET];
-          var NAMES = { Dade: ['Miami', 'Miami Dade'], Broward: ['Broward', 'Broward'] }, nm = NAMES[MARKET] || [MARKET, MARKET];
+          if (MARKET === 'All') document.documentElement.classList.add('mx-all');
+          var NAMES = { Dade: ['Miami', 'Miami Dade'], Broward: ['Broward', 'Broward'], All: ['All', 'Both markets'] }, nm = NAMES[MARKET] || [MARKET, MARKET];
           document.getElementById('mm-title').textContent = 'Broward & Dade Metrics'; /* same title on both markets (Dillon, Nov 12) */
           document.getElementById('mm-sub').textContent = nm[1] + ' · BP-Ontrac Team Metrics';
           window.__mmTitle = { en: 'Broward & Dade Metrics', es: 'Métricas de Broward y Dade', ht: 'Metrik Broward ak Dade', uk: 'Показники Бровард і Дейд' };
@@ -2289,7 +2294,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
             nav.innerHTML = keys.map(function (k) { return '<a href="?market=' + encodeURIComponent(k) + '"' + (k === MARKET ? ' aria-current="page"' : '') + '>' + (NAMES[k] ? NAMES[k][1] : k) + '</a>'; }).join('');
             nav.hidden = false;
           }
-          XM = {}; keys.forEach(function (k) { XM[k] = { name: NAMES[k] ? NAMES[k][1] : k, roster: D.markets[k].roster || [] }; });
+          XM = {}; REAL.forEach(function (k) { XM[k] = { name: NAMES[k] ? NAMES[k][1] : k, roster: D.markets[k].roster || [] }; });
           start({ team: M.team, pulled: D.pulled, months: M.months }, M.roster);
         })
         .catch(function (e) {
@@ -2297,6 +2302,31 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var sec = document.getElementById('metrics-section');
           if (sec) sec.insertAdjacentHTML('afterbegin', '<p class="mx-note" style="color:var(--color-bad)">The metrics data didn\'t load. Refresh the page to try again.</p>');
         });
+      function combineMarkets(D, REAL) {
+        var C = D.cols, ix = {}; C.forEach(function (c, k) { ix[c] = k; });
+        var SUM = ['jobs', 'installs', 'tcs', 'tu_res', 'tu_elig', 'prom', 'det', 'surveys', 'ftr_fail', 'ftr_jobs', 'appts', 'met_appts'];
+        function teamSum(rows) {
+          var o = C.map(function () { return 0; });
+          SUM.forEach(function (c) { rows.forEach(function (r) { o[ix[c]] += +r[ix[c]] || 0; }); });
+          var J = o[ix.jobs];
+          o[ix.tu] = o[ix.tu_elig] ? Math.round(1000 * o[ix.tu_res] / o[ix.tu_elig]) / 10 : 0;
+          o[ix.tnps] = o[ix.surveys] ? Math.round(1000 * (o[ix.prom] - o[ix.det]) / o[ix.surveys]) / 10 : 0;
+          o[ix.ftr] = o[ix.ftr_jobs] ? Math.round(1000 * (1 - o[ix.ftr_fail] / o[ix.ftr_jobs])) / 10 : 0;
+          o[ix.met] = o[ix.appts] ? Math.round(1000 * o[ix.met_appts] / o[ix.appts]) / 10 : 0;
+          ['pht', 'rework', 'repeat'].forEach(function (c) {   // job-weighted
+            var w = 0; rows.forEach(function (r) { w += (+r[ix[c]] || 0) * (+r[ix.jobs] || 0); }); o[ix[c]] = J ? Math.round(10 * w / J) / 10 : 0;
+          });
+          return o;
+        }
+        var base = D.markets[REAL[0]], months = base.months.map(function (m0, i) {
+          var techs = {}, teams = [];
+          REAL.forEach(function (k) { var m = D.markets[k].months[i]; if (!m) return; teams.push(m.team); Object.keys(m.techs).forEach(function (id) { techs[id] = m.techs[id]; }); });
+          return { label: m0.label, start: m0.start, end: m0.end, team: teamSum(teams.filter(Boolean)), techs: techs };
+        });
+        var roster = []; REAL.forEach(function (k) { roster = roster.concat(D.markets[k].roster || []); });
+        roster.sort(function (a, b) { return a.sup < b.sup ? -1 : a.sup > b.sup ? 1 : a.name < b.name ? -1 : 1; });
+        return { team: REAL.map(function (k) { return D.markets[k].team; }).join(' + '), roster: roster, months: months };
+      }
       function start(SNAP, ROSTER) {
       var COLS = ["jobs", "installs", "tcs", "tu_res", "tu_elig", "tu", "prom", "det", "surveys", "tnps", "ftr_fail", "ftr_jobs", "ftr", "pht", "appts", "met_appts", "met", "rework", "repeat"];
       var TARGET = { tu: 99.5, tnps: 95, ftr: 93 };
@@ -2611,7 +2641,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           return '<tr' + L + ' data-sc-sup="' + esc(s) + '" title="' + LT + 'Open supervisor scorecard"><td class="rk">' + (idx + 1) + '</td><td class="l tech"><span class="sc-who">' + AV(s, 30) + esc(s) + '</span></td><td class="lg-only">' + a.techs + '</td><td class="lg-only">' + num(r.jobs) + '</td><td class="' + cls('tu', r.tu) + '">' + pct(r.tu) + '</td><td class="lg-only">' + num(r.tu_fail) + '</td><td class="' + cls('tnps', r.tnps) + '">' + pct(r.tnps) + '<span class="sub">' + num(r.surveys) + '</span></td><td class="lg-only">' + num(r.det) + '</td><td class="' + cls('ftr', r.ftr) + '">' + pct(r.ftr) + '</td><td class="lg-only">' + num(r.ftr_fail) + '</td></tr>';
         }).join('');
         var t = rates(teamRow(m));
-        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc((MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="lg-only">' + num(t.tu_fail) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="lg-only">' + num(t.det) + '</td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="lg-only">' + num(t.ftr_fail) + '</td></tr>';
+        body += '<tr class="team"><td class="rk"></td><td class="l">' + esc(MARKET === 'All' ? 'All techs (both markets)' : (MARKET === 'Dade' ? 'Miami' : MARKET) + ' techs (all)') + '</td><td class="lg-only">' + Object.keys(m.techs).length + '</td><td class="lg-only">' + num(t.jobs) + '</td><td class="' + cls('tu', t.tu) + '">' + pct(t.tu) + '</td><td class="lg-only">' + num(t.tu_fail) + '</td><td class="' + cls('tnps', t.tnps) + '">' + pct(t.tnps) + '<span class="sub">' + num(t.surveys) + '</span></td><td class="lg-only">' + num(t.det) + '</td><td class="' + cls('ftr', t.ftr) + '">' + pct(t.ftr) + '</td><td class="lg-only">' + num(t.ftr_fail) + '</td></tr>';
         $('mx-sup-table').innerHTML = head + '<tbody>' + body + '</tbody>';
       }
 
@@ -3433,7 +3463,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var MK = (typeof MARKET !== 'undefined' && MARKET) || 'Dade';
 
         // every market's roster (techs + supervisors), so a search finds techs from the other market too
-        var MKS = XM || {}; if (!MKS[MK]) MKS[MK] = { name: MK, roster: ROSTER };
+        var MKS = XM || {}; if (!MKS[MK] && MK !== 'All') MKS[MK] = { name: MK, roster: ROSTER };
         function mkName(m) { return (MKS[m] && MKS[m].name) || m; }
         function supsOf(m) { var a = []; (MKS[m].roster || []).forEach(function (t) { if (t.sup && a.indexOf(t.sup) < 0) a.push(t.sup); }); return a; }
 
@@ -3481,7 +3511,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         function search(v) {
           var toks = fold(v).split(/[\s,]+/).filter(Boolean); if (!toks.length) return [];
           var res = [];
-          var order = [MK].concat(Object.keys(MKS).filter(function (m) { return m !== MK; }));
+          var order = [MK].concat(Object.keys(MKS).filter(function (m) { return m !== MK; })).filter(function (m) { return MKS[m]; });
           order.forEach(function (mk) {
           var bump = mk === MK ? 5 : 0; // the market you're on ranks first on a tie
           (MKS[mk].roster || []).forEach(function (t) {
