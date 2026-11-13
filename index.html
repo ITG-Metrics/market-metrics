@@ -2218,7 +2218,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var b = getComputedStyle(document.body).backgroundColor;
         return rgba(b) || [255, 255, 255, 1];
       }
-      var SKIP = 'script,style,svg,canvas,noscript,.theme-toggle';
+      // goal colors in the tables are chosen to read in both themes; leave them alone (Dillon, Nov 12: misses showed white on phones)
+      var SKIP = 'script,style,svg,canvas,noscript,.theme-toggle,.mx-table td.miss,.mx-table td.good';
       function check(el) {
         if (el.closest(SKIP)) return;
         var cs = getComputedStyle(el);
@@ -2341,7 +2342,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           pht: r.pht, rework: r.rework, repeat: r.repeat
         };
       }
-      function cls(k, v) { if (v == null || !(k in TARGET)) return ''; return v >= TARGET[k] ? 'good' : 'miss'; }
+      // judged on the value as shown (1 decimal), so 99.46% shown as 99.5% counts as meeting a 99.5% target
+      function cls(k, v) { if (v == null || !(k in TARGET)) return ''; return Math.round(v * 10) / 10 >= TARGET[k] ? 'good' : 'miss'; }
       function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
       // ---------- slider ----------
