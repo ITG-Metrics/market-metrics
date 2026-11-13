@@ -1405,19 +1405,21 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-ticks button.on { color: var(--color-fg); font-weight: 600; }
       /* Hero: Tool usage, tNPS and FTR with glass orbs (Nov 11) */
       .mx-hero { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .mx-hero-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: calc(var(--cds-radius) * 1.4); padding: 18px 20px; display: flex; align-items: center; gap: 20px; min-width: 0; }
-      .mx-hero-card canvas { display: block; flex: none; border-radius: 50%; }
+      /* Tick gauge under the number (Nov 12; replaced the glass orbs): see MXticks. */
+      .mx-hero-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: calc(var(--cds-radius) * 1.4); padding: 16px 18px 12px; display: grid; gap: 8px; min-width: 0; }
+      .mx-hero-card canvas.mx-tickg { display: block; width: 100%; height: 54px; }
       .mx-hero-txt { display: grid; gap: 4px; min-width: 0; }
+      .mx-hero-row { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px; }
       .mx-hero-k { font-size: 13px; color: var(--color-fg-muted); display: flex; align-items: center; gap: 7px; }
       .mx-hero-k i { width: 8px; height: 8px; border-radius: 50%; background: var(--mx-hc); display: inline-block; }
       .mx-hero-v { font-family: var(--font-anthropic-serif); font-size: 46px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--mx-hc); }
       .mx-hero-tags { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
       .mx-hero-tags .good { color: var(--mx-ok); } .mx-hero-tags .bad { color: var(--color-bad); }
-      .mx-hero-card.good { --mx-hc: var(--mx-ok); } .mx-hero-card.near { --mx-hc: #c99a0e; } .mx-hero-card.bad { --mx-hc: var(--color-bad); }
+      .mx-hero-card.good { --mx-hc: var(--mx-ok); } .mx-hero-card.near { --mx-hc: #8f6a00; } .mx-hero-card.bad { --mx-hc: var(--color-bad); }
       :root[data-theme="dark"] .mx-hero-card.near { --mx-hc: #e3b21f; }
       @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mx-hero-card.near { --mx-hc: #e3b21f; } }
-      @media (max-width: 60rem) and (min-width: 34rem) { .mx-hero-card { flex-direction: column; text-align: center; padding: 14px 10px; gap: 10px; } .mx-hero-k, .mx-hero-tags { justify-content: center; } .mx-hero-v { font-size: 36px; } }
-      @media (max-width: 34rem) { .mx-hero { gap: 6px; } .mx-hero-card { flex-direction: column; text-align: center; padding: 10px 4px; gap: 8px; } .mx-hero-k, .mx-hero-tags { justify-content: center; } .mx-hero-k { font-size: 12px; } .mx-hero-v { font-size: 22px; } .mx-hero-tags { font-size: 10.5px; flex-direction: column; gap: 1px; } }
+      @media (max-width: 60rem) and (min-width: 34rem) { .mx-hero-card { padding: 14px 12px 10px; } .mx-hero-v { font-size: 36px; } }
+      @media (max-width: 34rem) { .mx-hero { gap: 6px; } .mx-hero-card { text-align: center; padding: 10px 6px 6px; gap: 6px; } .mx-hero-row { justify-content: center; } .mx-hero-k, .mx-hero-tags { justify-content: center; } .mx-hero-k { font-size: 12px; } .mx-hero-v { font-size: 22px; } .mx-hero-tags { font-size: 10.5px; flex-direction: column; gap: 1px; } .mx-hero-card canvas.mx-tickg { height: 40px; } }
       .mx-tiles.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
       @media (max-width: 60rem) { .mx-tiles.five { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       /* KPI tiles (scorecard .sc-tile) */
@@ -2434,18 +2436,68 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
     };
     return makeOrb;
   })();
+      /* Horizontal tick gauge for the hero row (Dillon, Nov 12; replaced the glass orbs). Ticks fill up to the value in the card
+         color, a white tick with an arrow marks the target. Zoomed scale: 95–100% for tool usage, target − 10 to 100% otherwise.
+         Fills once (1.4 s), then stops; redraws on resize and theme change; still with reduced motion. */
+      var MXticks = (function () {
+        var live = [];
+        var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function paint(g) {
+          var cv = g.cv, W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
+          var dpr = Math.min(2, window.devicePixelRatio || 1);
+          if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+          var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+          var card = cv.parentNode, cs = getComputedStyle(card), col = cs.getPropertyValue('--mx-hc').trim() || cs.color;
+          var fg = getComputedStyle(document.body).color, muted = getComputedStyle(card.querySelector('.mx-hero-k') || card).color;
+          var T = g.T, lo = T >= 99 ? 95 : T - 10, hi = 100, pos = function (x) { return (Math.max(lo, Math.min(hi, x)) - lo) / (hi - lo); };
+          var N = W >= 340 ? 120 : W >= 200 ? 80 : 40, pad = 6, step = (W - pad * 2) / N, w = Math.max(1.1, Math.min(2.4, step * 0.5));
+          var small = W < 200, top = 9, bot = H - (small ? 4 : 18), lit = Math.round(pos(g.v) * N * g.e);
+          ctx.lineCap = 'round';
+          for (var i = 0; i < N; i++) {
+            var x = pad + step * (i + 0.5), major = i % (N / 10) === 0, on = i < lit;
+            ctx.globalAlpha = on ? 1 : 0.14; ctx.strokeStyle = on ? col : fg; ctx.lineWidth = major ? w * 1.25 : w;
+            ctx.shadowColor = on ? col : 'transparent'; ctx.shadowBlur = on ? 4 : 0;
+            ctx.beginPath(); ctx.moveTo(x, major ? top : top + 4); ctx.lineTo(x, bot); ctx.stroke();
+          }
+          ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+          var gx = pad + (W - pad * 2) * pos(T);
+          ctx.strokeStyle = fg; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(gx, top - 6); ctx.lineTo(gx, bot + 2); ctx.stroke();
+          ctx.fillStyle = fg; ctx.beginPath(); ctx.moveTo(gx - 5, 0); ctx.lineTo(gx + 5, 0); ctx.lineTo(gx, 6); ctx.closePath(); ctx.fill();
+          if (!small) {
+            ctx.font = '600 10.5px Inter, system-ui, sans-serif'; ctx.textBaseline = 'top';
+            ctx.fillStyle = muted;
+            if (gx - pad > 80) { ctx.textAlign = 'left'; ctx.fillText(lo + '%', pad, bot + 5); }
+            if (W - pad - gx > 80) { ctx.textAlign = 'right'; ctx.fillText('100%', W - pad, bot + 5); }
+            ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.fillText('Target ' + T + '%', Math.max(40, Math.min(W - 44, gx)), bot + 5);
+          }
+        }
+        function repaintAll() { live = live.filter(function (g) { return g.cv.isConnected; }); live.forEach(paint); }
+        new MutationObserver(repaintAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+        var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(repaintAll, 150); });
+        return function (v, T) {
+          var cv = document.createElement('canvas'); cv.className = 'mx-tickg'; cv.setAttribute('role', 'img');
+          cv.setAttribute('aria-label', pct(v) + ', target ' + T + '%');
+          var g = { cv: cv, v: v, T: T, e: still ? 1 : 0 }; live.push(g);
+          requestAnimationFrame(function () {
+            if (still) { paint(g); return; }
+            var t0 = performance.now();
+            (function step(now) { var k = Math.min(1, (now - t0) / 1400); g.e = 1 - Math.pow(1 - k, 3); paint(g); if (k < 1 && cv.isConnected) requestAnimationFrame(step); })(t0);
+          });
+          return cv;
+        };
+      })();
       function hero(cur, was, prev) {
         var host = $('mx-hero'); if (!host) return; host.replaceChildren();
         var big = window.innerWidth < 544 ? Math.max(74, Math.min(96, Math.floor((window.innerWidth - 60) / 3 - 14))) : window.innerWidth < 960 ? 110 : 136;
         [['tu', 'Tool usage'], ['tnps', 'tNPS'], ['ftr', 'FTR']].forEach(function (x) {
           var k = x[0], v = cur[k], T = TARGET[k], vr = v == null ? null : Math.round(v * 10) / 10, cls = v == null ? '' : vr >= T ? 'good' : T - vr <= (T >= 99 ? 0 : 0.5) ? 'near' : 'bad';
           var card = document.createElement('div'); card.className = 'mx-hero-card ' + cls;
-          if (v != null) { var o = MXorb(v, T, big); o.cv.title = 'Filled to ' + pct(v) + '; the notches on the glass mark the ' + T + '% target'; card.appendChild(o.cv); }
           var tx = document.createElement('div'); tx.className = 'mx-hero-txt';
           var tg = '<span>Target ' + T + '%</span>';
           if (was && was[k] != null && v != null) { var dv = v - was[k]; tg += '<span class="' + (Math.abs(dv) < 0.05 ? '' : dv >= 0 ? 'good' : 'bad') + '">' + (dv >= 0 ? '+' : '−') + Math.abs(dv).toFixed(1) + ' vs ' + esc(prev.label) + '</span>'; }
-          tx.innerHTML = '<span class="mx-hero-k"><i></i>' + x[1] + '</span><span class="mx-hero-v">' + pct(v) + '</span><div class="mx-hero-tags">' + tg + '</div>';
+          tx.innerHTML = '<span class="mx-hero-k"><i></i>' + x[1] + '</span><div class="mx-hero-row"><span class="mx-hero-v">' + pct(v) + '</span><div class="mx-hero-tags">' + tg + '</div></div>';
           card.appendChild(tx); host.appendChild(card);
+          if (v != null) card.appendChild(MXticks(v, T));
         });
       }
       // ---------- tiles ----------
