@@ -2410,8 +2410,11 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       // ?market=Broward would show another market from the same file once it is in there.
       var MARKET = new URLSearchParams(location.search).get('market') || 'Dade';
       var XM = null; // every market's roster, so the header search can find techs in the other market
-      fetch('data/market.json', { cache: 'no-cache' })
+      // Since Nov 17 the current copy lives with the team pages (team-metrics/data/market.json), where the inbox
+      // updates it; this repo's own data/market.json is the fallback.
+      fetch('/team-metrics/data/market.json', { cache: 'no-cache' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .catch(function () { return fetch('data/market.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); })
         .then(function (D) {
           var REAL = Object.keys(D.markets);
           // "Both markets" tab (Dillon, Nov 12): Dade + Broward added together, supervisors only (no tech lists).
