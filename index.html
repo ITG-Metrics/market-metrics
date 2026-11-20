@@ -1495,7 +1495,9 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         /* A tech with no jobs this month: dashes instead of last month's numbers (the desktop table explains them in Status) */
         body:not(#_sc) #mx-tech-table tr.away td:not(.l) { font-size: 0; }
         body:not(#_sc) #mx-tech-table tr.away td:not(.l)::after { content: '—'; font-size: 13px; font-weight: 400; color: var(--color-fg-muted); }
-        body:not(#_sc) #mx-tech-table .mx-awaynote { display: block; font-size: 11px; color: var(--color-fg-muted); }
+        body:not(#_sc) #mx-tech-table .mx-awaynote, #mx-sc.scm-is-sup .scm-table .mx-awaynote { display: block; font-size: 11px; color: var(--color-fg-muted); }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table tr.away td:not(.l) { font-size: 0; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table tr.away td:not(.l)::after { content: '—'; font-size: 13px; font-weight: 400; color: var(--color-fg-muted); }
         body:not(#_sc) #mx-tech-table { width: 100%; min-width: 0; }
         body:not(#_sc) #mx-tech-table td:not(.l), body:not(#_sc) #mx-tech-table th:not(.l) { width: 4.2rem; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
         body:not(#_sc) #mx-tech-table td.l.tech { width: auto; max-width: none; }
@@ -3622,9 +3624,14 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var tb = '<div class="scm-tablebox"><table class="mx-table scm-table"><thead><tr><th class="rk"><span>Team</span></th><th class="l"><span>Tech</span></th><th><span>Market</span></th><th><span>Score</span></th><th><span>Jobs</span></th><th><span>Tool usage</span></th><th><span>tNPS</span></th><th><span>FTR</span></th><th class="l"><span>Status</span></th></tr></thead><tbody>' +
             rows.map(function (r) {
               var m = mr[r.t.id];
-              return '<tr data-sc-tech="' + esc(r.t.id) + '" title="Open tech scorecard"><td class="rk">' + (r.rank == null ? '–' : r.rank) + '</td><td class="l"><span class="tech">' + esc(r.t.id) + '</span> <span class="sub">' + esc(r.t.name) + '</span></td>' +
+              return '<tr' + (r.away ? ' class="away"' : '') + ' data-sc-tech="' + esc(r.t.id) + '" title="Open tech scorecard"><td class="rk">' + (r.rank == null ? '–' : r.rank) + '</td><td class="l"><span class="tech">' + esc(r.t.id) + '</span> <span class="sub">' + esc(r.t.name) + '</span>' + (r.away ? '<span class="mx-awaynote">No jobs this month</span>' : '') + '</td>' +
                 '<td>' + (m && m.rank != null ? ord(m.rank) : '–') + '</td><td>' + (r.score == null ? '—' : r.score.toFixed(1)) + '</td><td>' + (r.away ? '—' : num(r.jobs)) + '</td>' +
                 '<td class="' + (r.tu_miss ? 'miss' : r.tu != null && !r.away ? 'good' : '') + '">' + pct(r.tu) + '</td><td class="' + (r.tnps_miss ? 'miss' : r.surveys < 5 ? 'dim' : r.tnps != null && !r.away ? 'good' : '') + '">' + pct(r.tnps) + '</td><td class="' + (r.ftr_miss ? 'miss' : r.ftr != null && !r.away ? 'good' : '') + '">' + pct(r.ftr) + '</td><td class="l">' + pill(r) + '</td></tr>';
+            }).join('') +
+            // techs on the roster with no numbers at all in these months (new or out): listed with dashes (Dillon, Nov 19)
+            ROSTER.filter(function (t) { return t.sup === sup && !rows.some(function (r) { return r.t.id === t.id; }); }).map(function (t) {
+              return '<tr class="away"><td class="rk">–</td><td class="l"><span class="tech">' + esc(t.id) + '</span> <span class="sub">' + esc(t.name) + '</span><span class="mx-awaynote">No jobs this month</span></td>' +
+                '<td>–</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="l"><span class="mx-pill">No jobs this month</span></td></tr>';
             }).join('') + '</tbody></table></div>';
           body += '<div class="scm-sec"><h3>Team, ranked</h3>' + tb + '</div>';
           var ranked = rows.filter(function (r) { return r.rank != null; });
