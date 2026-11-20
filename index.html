@@ -1491,6 +1491,9 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
          supervisor pop-up is cut down to the name, rank, the three metrics and the team list. */
       @media (max-width: 44rem), (pointer: coarse) and (max-width: 64rem) {
         body:not(#_sc) #mx-tech-table .rk, body:not(#_sc) #mx-tech-table .mx-sco, body:not(#_sc) #mx-tech-table .mx-st, body:not(#_sc) #mx-tech-table .hide-sm { display: none !important; }
+        /* Phone header (Dillon, Nov 19): no subtitle, no Metrics / Xfinity Ambassador tabs, search on its own full-width row under the controls */
+        #mm-sub, #mm-views { display: none !important; }
+        .mm-head .mm-search { order: 5; flex: 1 1 100%; max-width: none; width: 100%; margin: 2px auto 0; }
         #mx-tiles { display: none !important; }   /* Appointments met, Repeat, Rework, PHT pass, Total jobs: not on phones (Dillon, Nov 19) */
         /* A tech with no jobs this month: dashes instead of last month's numbers (the desktop table explains them in Status) */
         body:not(#_sc) #mx-tech-table tr.away td:not(.l) { font-size: 0; }
