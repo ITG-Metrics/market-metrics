@@ -1479,12 +1479,40 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       #mx-sup-table th[aria-sort="descending"] span::after { content: " ↓"; }
       #mx-sup-table th.rk[aria-sort] span::after { content: none; }
       body:not(#_sc) .mx-table td.good { color: var(--mx-ok); font-weight: 600; }
+      body:not(#_sc) #mx-sc .scm-table td.good, body:not(#_sc) #mx-tech-table td.good { color: var(--mx-ok, var(--color-ok)); font-weight: 600; }
       body:not(#_sc) .mx-table td.miss { color: var(--color-bad); font-weight: 600; }
       body:not(#_sc) .mx-table td.dim, body:not(#_sc) .mx-table tr.away td { color: var(--color-fg-muted); }
       .mx-table .tech { font-weight: 600; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
+      /* Phones, upright or sideways (Dillon, Nov 19): the Techs table is only the tech and the three main metrics; the
+         supervisor pop-up is cut down to the name, rank, the three metrics and the team list. */
+      @media (max-width: 44rem), (pointer: coarse) and (max-width: 64rem) {
+        body:not(#_sc) #mx-tech-table .rk, body:not(#_sc) #mx-tech-table .mx-sco, body:not(#_sc) #mx-tech-table .mx-st, body:not(#_sc) #mx-tech-table .hide-sm { display: none !important; }
+        body:not(#_sc) #mx-tech-table { width: 100%; min-width: 0; }
+        body:not(#_sc) #mx-tech-table td:not(.l), body:not(#_sc) #mx-tech-table th:not(.l) { width: 4.2rem; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        body:not(#_sc) #mx-tech-table td.l.tech { width: auto; max-width: none; }
+        #mx-sc.scm-is-sup .modal-content.scm { width: 100%; max-width: 100vw; box-sizing: border-box; overflow-x: hidden; padding: 18px 12px 16px !important; grid-template-columns: minmax(0, 1fr); margin-left: 0; margin-right: 0; }
+        #mx-sc.scm-is-sup #mx-sc-body { min-width: 0; }
+        .scm-is-sup .scm-badges .scm-badge:not(:first-child), .scm-is-sup .scm-bar, .scm-is-sup .scm-two,
+        .scm-is-sup .scm-sec:has(.scm-trends), .scm-is-sup .scm-tiles .scm-tile:not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(4)),
+        .scm-is-sup .scm-tile .s { display: none !important; }
+        .scm-is-sup .scm-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .scm-is-sup .scm-tile { min-width: 0; padding: 10px; } .scm-is-sup .scm-tile .v { font-size: 22px; } .scm-is-sup .scm-tile .c { font-size: 11px; }
+        .scm-is-sup .scm-table th:nth-child(1), .scm-is-sup .scm-table td:nth-child(1), .scm-is-sup .scm-table th:nth-child(3), .scm-is-sup .scm-table td:nth-child(3),
+        .scm-is-sup .scm-table th:nth-child(4), .scm-is-sup .scm-table td:nth-child(4), .scm-is-sup .scm-table th:nth-child(5), .scm-is-sup .scm-table td:nth-child(5),
+        .scm-is-sup .scm-table th:nth-child(9), .scm-is-sup .scm-table td:nth-child(9) { display: none !important; }
+        .scm-is-sup .scm-tablebox { max-height: none; overflow: visible; }
+        .scm-is-sup .scm-table { width: 100%; min-width: 0; } .scm-is-sup .scm-table td.l { white-space: normal; }
+        .scm-is-sup .scm-table td.l .tech { display: block; } .scm-is-sup .scm-table td:not(.l), .scm-is-sup .scm-table th:not(.l) { width: 3.9rem; text-align: right; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table { table-layout: fixed; width: 100%; min-width: 0; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table td.l .sub, body:not(#_sc) #mx-sc.scm-is-sup .scm-table td.l { white-space: normal; overflow-wrap: anywhere; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table td.l .sub { display: block; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table th:not(.l), body:not(#_sc) #mx-sc.scm-is-sup .scm-table td:not(.l) { width: 3.7rem; padding-left: 2px; padding-right: 6px; }
+        body:not(#_sc) #mx-sc.scm-is-sup .scm-table th span { white-space: normal; }
+        .scm-is-sup .scm-head { flex-wrap: wrap; } .scm-is-sup .scm-badges { width: 100%; }
+      }
       /* Phones (Dillon, Nov 19): no Status column in the Techs table; the three main metrics get even columns and nothing scrolls sideways. */
       @media (max-width: 44rem) {
         body:not(#_sc) #mx-tech-table .mx-st { display: none !important; }
@@ -2930,7 +2958,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       var TT_PHONE = window.matchMedia('(max-width: 44rem)');
       TT_PHONE.addEventListener('change', function () { drawTable(); });
       var TT = [
-        ['rank', 'Rank', 'rk'], ['id', 'Tech', 'l'], ['score', 'Score', ''], ['misses', 'Status', 'l mx-st'], ['jobs', 'Jobs', 'hide-sm'], ['tc_share', 'Job mix', 'hide-sm'],
+        ['rank', 'Rank', 'rk'], ['id', 'Tech', 'l'], ['score', 'Score', 'mx-sco'], ['misses', 'Status', 'l mx-st'], ['jobs', 'Jobs', 'hide-sm'], ['tc_share', 'Job mix', 'hide-sm'],
         ['tu', 'Tool usage', 'grp'], ['tu_fails', 'TU fails', 'hide-sm'], ['tnps', 'tNPS', ''], ['tnps_fails', 'tNPS fails', 'hide-sm'],
         ['ftr', 'FTR', ''], ['ftr_fails', 'FTR fails', 'hide-sm']
         // Repeat, Rework, PHT pass, Appts met, FTR 6-month, tNPS 3 mo and Fixes to target columns removed (Dillon, Nov 12).
@@ -2995,7 +3023,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var td = function (text, cls) { var c = document.createElement('td'); if (cls) c.className = cls; if (text != null) c.textContent = text; tr.appendChild(c); return c; };
           var rk = td(r.rank == null ? '—' : String(r.rank), 'rk'); if (r.rank == null) rk.title = 'Not ranked: no jobs in this timeframe';
           var c0 = td(r.t.id, 'l tech'); c0.dataset.scTech = r.t.id; c0.title = 'Open tech scorecard'; var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.t.name; c0.appendChild(nm);
-          var sc = td(r.score == null ? '—' : r.score.toFixed(1), r.score == null ? 'dim' : '');
+          var sc = td(r.score == null ? '—' : r.score.toFixed(1), 'mx-sco' + (r.score == null ? ' dim' : ''));
           if (r.score != null) sc.title = 'Score ' + r.score.toFixed(1) + ' pts: 60% FTR, 30% tNPS, 10% tool usage (small samples pulled toward the average)';
           var st = td(null, 'l mx-st'), p = document.createElement('span'); p.className = 'mx-pill ' + (r.away ? '' : r.misses === 0 ? 'ok' : r.misses === 1 ? 'warn' : 'bad'); p.textContent = r.status; st.appendChild(p);
           td(r.away ? '—' : num(r.jobs), 'hide-sm');
@@ -3003,12 +3031,12 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           bar.title = 'Installs ' + pct(r.inst_share) + ', trouble calls ' + pct(r.tc_share) + ', SROs ' + pct(r.sro_share);
           [r.inst_share, r.tc_share, r.sro_share].forEach(function (s, i) { var seg = document.createElement('span'); seg.style.width = s + '%'; seg.style.background = MIXC[i]; bar.appendChild(seg); });
           mc.appendChild(bar);
-          td(pct(r.tu), 'grp' + (r.tu_miss ? ' miss' : ''));
+          td(pct(r.tu), 'grp' + (r.tu_miss ? ' miss' : (r.tu != null && !r.away ? ' good' : '')));   // green when it meets the target, like the supervisor table (Nov 19)
           td(r.tu_fails == null ? '—' : String(r.tu_fails), 'hide-sm' + (r.tu_fails > 0 ? ' miss' : ''));
-          var low = r.surveys < 5, tn = td(pct(r.tnps), r.tnps_miss ? 'miss' : low ? 'dim' : '');
+          var low = r.surveys < 5, tn = td(pct(r.tnps), r.tnps_miss ? 'miss' : low ? 'dim' : (r.tnps != null && !r.away ? 'good' : ''));
           if (low) { var s = document.createElement('span'); s.className = 'mx-low'; s.textContent = 'low'; s.title = r.surveys + ' surveys'; tn.appendChild(s); }
           td(r.tnps_fails == null ? '—' : String(r.tnps_fails), 'hide-sm' + (r.tnps_fails > 0 ? ' miss' : ''));
-          td(pct(r.ftr), r.ftr_miss ? 'miss' : '');
+          td(pct(r.ftr), r.ftr_miss ? 'miss' : (r.ftr != null && !r.away ? 'good' : ''));
           td(r.ftr_fails == null ? '—' : String(r.ftr_fails), 'hide-sm' + (r.ftr_fails > 0 ? ' miss' : ''));
           phoneOrder(tr);
           // Nov 19: a row opens the tech's pop-up card (the Tech detail section below was removed)
@@ -3589,7 +3617,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
               var m = mr[r.t.id];
               return '<tr data-sc-tech="' + esc(r.t.id) + '" title="Open tech scorecard"><td class="rk">' + (r.rank == null ? '–' : r.rank) + '</td><td class="l"><span class="tech">' + esc(r.t.id) + '</span> <span class="sub">' + esc(r.t.name) + '</span></td>' +
                 '<td>' + (m && m.rank != null ? ord(m.rank) : '–') + '</td><td>' + (r.score == null ? '—' : r.score.toFixed(1)) + '</td><td>' + (r.away ? '—' : num(r.jobs)) + '</td>' +
-                '<td class="' + (r.tu_miss ? 'miss' : '') + '">' + pct(r.tu) + '</td><td class="' + (r.tnps_miss ? 'miss' : r.surveys < 5 ? 'dim' : '') + '">' + pct(r.tnps) + '</td><td class="' + (r.ftr_miss ? 'miss' : '') + '">' + pct(r.ftr) + '</td><td class="l">' + pill(r) + '</td></tr>';
+                '<td class="' + (r.tu_miss ? 'miss' : r.tu != null && !r.away ? 'good' : '') + '">' + pct(r.tu) + '</td><td class="' + (r.tnps_miss ? 'miss' : r.surveys < 5 ? 'dim' : r.tnps != null && !r.away ? 'good' : '') + '">' + pct(r.tnps) + '</td><td class="' + (r.ftr_miss ? 'miss' : r.ftr != null && !r.away ? 'good' : '') + '">' + pct(r.ftr) + '</td><td class="l">' + pill(r) + '</td></tr>';
             }).join('') + '</tbody></table></div>';
           body += '<div class="scm-sec"><h3>Team, ranked</h3>' + tb + '</div>';
           var ranked = rows.filter(function (r) { return r.rank != null; });
@@ -3618,7 +3646,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         var lastFocus = null;
         function open(type, id) {
           if (modal.style.display !== 'flex') { scK = ts.K; lastFocus = document.activeElement; }
-          cur = { type: type, id: id }; modal.style.display = 'flex'; draw();
+          cur = { type: type, id: id }; modal.classList.toggle('scm-is-sup', type === 'sup'); modal.style.display = 'flex'; draw();
         }
         function close() { modal.style.display = 'none'; cur = null; if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {} }
         document.addEventListener('click', function (e) {
