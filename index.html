@@ -1987,6 +1987,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mm-err { font-size: 12px; color: var(--color-bad); font-weight: 600; }
       .mm-unl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-ok); }
       .mm-c-note { margin: 12px 0 0; font-size: 13px; color: var(--color-fg-muted); }
+      .mm-c-lockrow { display: flex; justify-content: flex-end; margin: 8px 0 4px; } .mm-c-lockrow .mm-unlock { flex-wrap: wrap; justify-content: flex-end; }
       .mm-c-src { margin: 8px 0 0; font-size: 11px; color: var(--color-fg-muted); text-align: right; }
       @media (max-width: 52rem) { .mm-results.wide { grid-template-columns: 1fr; } .mm-res-list { border-right: 0; border-bottom: 1px solid var(--color-border-line); max-height: 12rem; padding: 0 0 6px; } .mm-two { grid-template-columns: 1fr; } }
       #mx-detail { display: none !important; } /* removed Nov 19 (Dillon): redundant with the pop-up card; markup kept so the code that fills it still runs */
@@ -3804,6 +3805,11 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var off = (P && P.off) || [];
           var h = awayNote + '<div class="mm-c-top"><span class="mm-c-av" aria-hidden="true">' + esc(ini.toUpperCase()) + '</span><div class="mm-c-who"><div class="mm-c-name" data-no-tr>' + esc(t.name) + '</div><span class="mm-pill" data-no-tr>Tech #' + esc(t.id) + '</span></div>' +
             '<span class="mm-status' + (term ? ' bad' : '') + '">' + (term ? 'Terminated' : 'Working') + '</span></div>';
+          // Passcode box right under the name and status (Dillon, Nov 19; it used to sit at the bottom of the card)
+          if (MI && P && MI.locked) {
+            h += '<div class="mm-c-lockrow">' + (SEC[CUR] ? '<span class="mm-unl">' + LOCKICO.replace('M8 11V7a4 4 0 0 1 8 0v4', 'M8 11V7a4 4 0 0 1 7.5-2') + '<span>Unlocked</span> <button type="button" class="lnk" data-lock>Lock</button></span>'
+              : '<form class="mm-unlock" data-unlock>' + LOCKICO + '<input type="password" autocomplete="off" placeholder="Passcode" aria-label="Passcode to show locked info"><button type="submit">Unlock</button>' + (cardErr ? '<span class="mm-err">' + esc(cardErr) + '</span>' : '') + '</form>') + '</div>';
+          }
           if (!MI) {
             h += '<p class="mm-c-note">Tech info isn’t available yet.</p>';
           } else if (!P) {
@@ -3823,10 +3829,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
               '<div><b data-no-tr>' + (+P.u33 || 0) + '</b><span>U33 forms</span></div><div><b data-no-tr>' + (+P.u44 || 0) + '</b><span>U44 forms</span></div></div></div></div>';
           }
           h += '<div class="mm-c-foot">';
-          if (MI && P && MI.locked) {
-            h += SEC[CUR] ? '<span class="mm-unl">' + LOCKICO.replace('M8 11V7a4 4 0 0 1 8 0v4', 'M8 11V7a4 4 0 0 1 7.5-2') + '<span>Unlocked</span> <button type="button" class="lnk" data-lock>Lock</button></span>'
-              : '<form class="mm-unlock" data-unlock>' + LOCKICO + '<input type="password" autocomplete="off" placeholder="Passcode" aria-label="Passcode to show locked info"><button type="submit">Unlock</button>' + (cardErr ? '<span class="mm-err">' + esc(cardErr) + '</span>' : '') + '</form>';
-          } else h += '<span></span>';
+          h += '<span></span>';
           h += '<span class="mm-c-btns"><button type="button" class="pri" data-go="card" data-i="' + act + '">Scorecard</button></span></div>';
           if (INFO) h += '<p class="mm-c-src">Shift Calendar info as of <span data-no-tr>' + esc(INFO.pulled || '') + '</span></p>';
           el.innerHTML = h;
