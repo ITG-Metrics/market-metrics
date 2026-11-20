@@ -1392,6 +1392,15 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-rail, .mx-fill { position: absolute; top: 11px; height: 6px; border-radius: 3px; }
       .mx-rail { left: 0; right: 0; background: var(--cds-chart-grid); }
       .mx-fill { left: 0; background: var(--mx-accent); }
+      /* Month picker as six tick blocks (Nov 19). The range input stays for keyboards and screen readers, visually hidden. */
+      #mx-span .mx-track { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      #mx-span { position: relative; }
+      #mx-ticks { height: auto; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin-top: 4px; }
+      #mx-ticks button, #mx-ticks button:first-child, #mx-ticks button:last-child { position: static; transform: none; display: grid; gap: 6px; justify-items: center; padding: 2px 0 4px; min-height: 44px; }
+      #mx-ticks .mx-blk { display: block; width: 100%; height: 26px; border-radius: 3px; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-fg) 22%, transparent) 0 2px, transparent 2px 5px); }
+      #mx-ticks button:hover .mx-blk { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-fg) 45%, transparent) 0 2px, transparent 2px 5px); }
+      #mx-ticks button.on .mx-blk { background: repeating-linear-gradient(90deg, var(--mx-accent) 0 2px, transparent 2px 5px); filter: drop-shadow(0 0 5px var(--mx-accent)); }
+      #mx-ticks button:focus-visible { outline: 2px solid var(--mx-accent); outline-offset: 2px; border-radius: 6px; }
       #mx-fill { display: none; } /* Nov 19 (Dillon): the month slider picks one month, so no filled bar that reads as 'everything up to here' */
       body:not(#_sc) #mx-slider { position: absolute; inset: 0; width: 100%; margin: 0; padding: 0; background: transparent; border: 0; box-shadow: none; -webkit-appearance: none; appearance: none; cursor: pointer; outline: none; }
       #mx-slider::-webkit-slider-runnable-track { background: transparent; height: 28px; }
@@ -2554,7 +2563,8 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       slider.max = SNAP.months.length - 1; slider.value = state.i;
       ticks.innerHTML = SNAP.months.map(function (m, k) {
         var left = SNAP.months.length > 1 ? (100 * k / (SNAP.months.length - 1)) : 0;
-        return '<button type="button" data-i="' + k + '" style="left:' + left + '%">' + esc(m.label).replace(/ FM$/, '<span class="mx-fm"> FM</span>') + '</button>';
+        // Six tick blocks (Dillon, Nov 19): one block per fiscal month, only the selected one lit
+        return '<button type="button" data-i="' + k + '" aria-label="' + esc(m.label) + '"><i class="mx-blk" aria-hidden="true"></i><span>' + esc(m.label).replace(/ FM$/, '<span class="mx-fm"> FM</span>') + '</span></button>';
       }).join('');
       ticks.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; state.i = +b.dataset.i; slider.value = state.i; render(); });
       slider.addEventListener('input', function () { state.i = +slider.value; render(); });
@@ -3273,7 +3283,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         $('mx-month-label').textContent = m.label;
         $('mx-month-range').textContent = d(m.start) + ' – ' + d(m.end) + (last ? ' (month to date)' : '');
         $('mx-fill').style.width = (SNAP.months.length > 1 ? 100 * state.i / (SNAP.months.length - 1) : 100) + '%';
-        [].forEach.call(ticks.children, function (b, k) { b.classList.toggle('on', k === state.i); });
+        [].forEach.call(ticks.children, function (b, k) { b.classList.toggle('on', k === state.i); b.setAttribute('aria-pressed', String(k === state.i)); });
         drawChips(); tiles(); supTable(); drawTable();
       }
 
