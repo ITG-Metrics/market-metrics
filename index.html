@@ -1392,6 +1392,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-rail, .mx-fill { position: absolute; top: 11px; height: 6px; border-radius: 3px; }
       .mx-rail { left: 0; right: 0; background: var(--cds-chart-grid); }
       .mx-fill { left: 0; background: var(--mx-accent); }
+      #mx-fill { display: none; } /* Nov 19 (Dillon): the month slider picks one month, so no filled bar that reads as 'everything up to here' */
       body:not(#_sc) #mx-slider { position: absolute; inset: 0; width: 100%; margin: 0; padding: 0; background: transparent; border: 0; box-shadow: none; -webkit-appearance: none; appearance: none; cursor: pointer; outline: none; }
       #mx-slider::-webkit-slider-runnable-track { background: transparent; height: 28px; }
       #mx-slider::-moz-range-track { background: transparent; }
