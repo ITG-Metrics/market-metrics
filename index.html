@@ -1486,10 +1486,15 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
+      .mx-awaynote { display: none; }
       /* Phones, upright or sideways (Dillon, Nov 19): the Techs table is only the tech and the three main metrics; the
          supervisor pop-up is cut down to the name, rank, the three metrics and the team list. */
       @media (max-width: 44rem), (pointer: coarse) and (max-width: 64rem) {
         body:not(#_sc) #mx-tech-table .rk, body:not(#_sc) #mx-tech-table .mx-sco, body:not(#_sc) #mx-tech-table .mx-st, body:not(#_sc) #mx-tech-table .hide-sm { display: none !important; }
+        /* A tech with no jobs this month: dashes instead of last month's numbers (the desktop table explains them in Status) */
+        body:not(#_sc) #mx-tech-table tr.away td:not(.l) { font-size: 0; }
+        body:not(#_sc) #mx-tech-table tr.away td:not(.l)::after { content: '—'; font-size: 13px; font-weight: 400; color: var(--color-fg-muted); }
+        body:not(#_sc) #mx-tech-table .mx-awaynote { display: block; font-size: 11px; color: var(--color-fg-muted); }
         body:not(#_sc) #mx-tech-table { width: 100%; min-width: 0; }
         body:not(#_sc) #mx-tech-table td:not(.l), body:not(#_sc) #mx-tech-table th:not(.l) { width: 4.2rem; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
         body:not(#_sc) #mx-tech-table td.l.tech { width: auto; max-width: none; }
@@ -3023,6 +3028,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var td = function (text, cls) { var c = document.createElement('td'); if (cls) c.className = cls; if (text != null) c.textContent = text; tr.appendChild(c); return c; };
           var rk = td(r.rank == null ? '—' : String(r.rank), 'rk'); if (r.rank == null) rk.title = 'Not ranked: no jobs in this timeframe';
           var c0 = td(r.t.id, 'l tech'); c0.dataset.scTech = r.t.id; c0.title = 'Open tech scorecard'; var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.t.name; c0.appendChild(nm);
+          if (r.away) { var an = document.createElement('span'); an.className = 'mx-awaynote'; an.textContent = 'No jobs this month'; c0.appendChild(an); }   // phones have no Status column to say so
           var sc = td(r.score == null ? '—' : r.score.toFixed(1), 'mx-sco' + (r.score == null ? ' dim' : ''));
           if (r.score != null) sc.title = 'Score ' + r.score.toFixed(1) + ' pts: 60% FTR, 30% tNPS, 10% tool usage (small samples pulled toward the average)';
           var st = td(null, 'l mx-st'), p = document.createElement('span'); p.className = 'mx-pill ' + (r.away ? '' : r.misses === 0 ? 'ok' : r.misses === 1 ? 'warn' : 'bad'); p.textContent = r.status; st.appendChild(p);
