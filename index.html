@@ -1475,6 +1475,13 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       .mx-table .sub { color: var(--color-fg-muted); font-size: 12px; margin-left: 4px; }
       body:not(#_sc) .mx-table tr.team td { border-top: 2px solid var(--color-border-line); font-weight: 600; }
       @media (max-width: 44rem) { .mx-table .hide-sm { display: none; } }
+      /* Phones (Dillon, Nov 19): no Status column in the Techs table; the three main metrics get even columns and nothing scrolls sideways. */
+      @media (max-width: 44rem) {
+        body:not(#_sc) #mx-tech-table .mx-st { display: none !important; }
+        body:not(#_sc) #mx-tech-table { width: 100%; min-width: 0; table-layout: auto; }
+        body:not(#_sc) #mx-tech-table th, body:not(#_sc) #mx-tech-table td { padding-left: 4px; padding-right: 4px; }
+        body:not(#_sc) #mx-tech-table td:not(.l):not(.rk) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      }
       /* Supervisor table on phones: rank, supervisor and tool usage, tNPS, FTR only (techs, jobs and the fail counts show on wider screens) */
       @media (max-width: 44rem) {
         #mx-sup-table .lg-only { display: none; }
@@ -1505,6 +1512,9 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
         body:not(#_sc) #mx-tech-table th.rk > button { font-size: 0; } body:not(#_sc) #mx-tech-table th.rk > button::before { content: '#'; font-size: 12px; }
         body:not(#_sc) #mx-techs-card { padding-left: 12px; padding-right: 12px; }
         body:not(#_sc) #mx-tech-table .mx-low { display: block; margin: 0; }
+        body:not(#_sc) #mx-tech-table td.l.tech { width: auto; min-width: 4.6rem; max-width: none; }
+        body:not(#_sc) #mx-tech-table td, body:not(#_sc) #mx-tech-table th > button { padding-left: 2px; padding-right: 2px; }
+        body:not(#_sc) #mx-tech-table td:not(.l):not(.rk), body:not(#_sc) #mx-tech-table th:not(.l):not(.rk) { width: 3.6rem; text-align: right; }
       }
       /* phones: short month ticks under the slider, and tile tags wrap instead of running past the tile */
       @media (max-width: 44rem) { #mx-ticks .mx-fm { display: none; } .mx-tile .row { flex-wrap: wrap; justify-content: flex-start; column-gap: 8px; row-gap: 2px; } }
@@ -2909,7 +2919,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       var TT_PHONE = window.matchMedia('(max-width: 44rem)');
       TT_PHONE.addEventListener('change', function () { drawTable(); });
       var TT = [
-        ['rank', 'Rank', 'rk'], ['id', 'Tech', 'l'], ['score', 'Score', ''], ['misses', 'Status', 'l'], ['jobs', 'Jobs', 'hide-sm'], ['tc_share', 'Job mix', 'hide-sm'],
+        ['rank', 'Rank', 'rk'], ['id', 'Tech', 'l'], ['score', 'Score', ''], ['misses', 'Status', 'l mx-st'], ['jobs', 'Jobs', 'hide-sm'], ['tc_share', 'Job mix', 'hide-sm'],
         ['tu', 'Tool usage', 'grp'], ['tu_fails', 'TU fails', 'hide-sm'], ['tnps', 'tNPS', ''], ['tnps_fails', 'tNPS fails', 'hide-sm'],
         ['ftr', 'FTR', ''], ['ftr_fails', 'FTR fails', 'hide-sm']
         // Repeat, Rework, PHT pass, Appts met, FTR 6-month, tNPS 3 mo and Fixes to target columns removed (Dillon, Nov 12).
@@ -2976,7 +2986,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
           var c0 = td(r.t.id, 'l tech'); c0.dataset.scTech = r.t.id; c0.title = 'Open tech scorecard'; var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.t.name; c0.appendChild(nm);
           var sc = td(r.score == null ? '—' : r.score.toFixed(1), r.score == null ? 'dim' : '');
           if (r.score != null) sc.title = 'Score ' + r.score.toFixed(1) + ' pts: 60% FTR, 30% tNPS, 10% tool usage (small samples pulled toward the average)';
-          var st = td(null, 'l'), p = document.createElement('span'); p.className = 'mx-pill ' + (r.away ? '' : r.misses === 0 ? 'ok' : r.misses === 1 ? 'warn' : 'bad'); p.textContent = r.status; st.appendChild(p);
+          var st = td(null, 'l mx-st'), p = document.createElement('span'); p.className = 'mx-pill ' + (r.away ? '' : r.misses === 0 ? 'ok' : r.misses === 1 ? 'warn' : 'bad'); p.textContent = r.status; st.appendChild(p);
           td(r.away ? '—' : num(r.jobs), 'hide-sm');
           var mc = td(null, 'hide-sm'), bar = document.createElement('div'); bar.className = 'mx-mix';
           bar.title = 'Installs ' + pct(r.inst_share) + ', trouble calls ' + pct(r.tc_share) + ', SROs ' + pct(r.sro_share);
