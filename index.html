@@ -2591,7 +2591,7 @@ body:not(#_sc) ::-webkit-scrollbar-track { background: transparent; }
       //   'bpontrac' = BP-Ontrac's own (used before Nov 9): FTR = 1 - FTR fails / FTR-contact jobs; tool usage = TU result / TU eligible.
       // tNPS is the same either way. Ranking is average place on tool usage, tNPS and FTR; ties go to higher FTR ('company') or to whoever is
       // closest to target, then FTR ('bpontrac'). Change this one word to switch back.
-      var FORMULA = 'company';
+      var FORMULA = 'bpontrac'; // Nov 25 (Dillon): match BP-Ontrac
       function row(arr) {
         if (!arr) return null; var o = {}; COLS.forEach(function (c, k) { o[c] = arr[k]; });
         o.tu_w = o.tu_elig > 0 ? (o.tu || 0) * o.jobs : 0; o.tu_wj = o.tu_elig > 0 ? o.jobs : 0;   // for the job-weighted tool usage
